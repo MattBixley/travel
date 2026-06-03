@@ -30,7 +30,8 @@ Produces in `docs/`:
 
 ## 3. Publish (GitHub Pages — same as your mattbixley/spain workflow)
 1. Push this folder to a GitHub repo.
-2. Repo **Settings → Pages → Source: Deploy from branch**, branch `main`, folder `/docs`.
+2. Repo **Settings → Pages → Source: GitHub Actions**. The included workflow
+   (`.github/workflows/build.yml`) runs `generate.py` and publishes `docs/` on every push.
 3. Your site is at `https://<user>.github.io/<repo>/`.
    - Want it private? Use a **private repo with Pages enabled** (GitHub paid tiers), or
      keep trips non-sensitive. The `.ics` URL is unguessable-ish but not secret.

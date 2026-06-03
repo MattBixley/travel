@@ -3,10 +3,6 @@ name: Build travel site
 on:
   push:
     branches: [main]
-    paths:
-      - "trips/**"
-      - "generate.py"
-      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 permissions:
