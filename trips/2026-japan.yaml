@@ -1,0 +1,67 @@
+# Sample trip. Copy this file per trip into trips/.
+# All times are local to the place they happen. Use 24h "YYYY-MM-DD HH:MM".
+# tz is the IANA timezone for that event's location.
+
+trip:
+  name: Japan 2026
+  slug: 2026-japan          # used for the page URL and ics filename
+  start: 2026-09-12
+  end: 2026-09-26
+  travellers: [Matt, Sarah]
+  notes: Two weeks, Tokyo -> Kyoto -> Hakone.
+
+# ---- Flights ----
+flights:
+  - confirmation: NZ-ABC123
+    airline: Air New Zealand
+    flight_no: NZ99
+    from: { airport: AKL, city: Auckland, tz: Pacific/Auckland }
+    to:   { airport: HND, city: Tokyo,   tz: Asia/Tokyo }
+    depart: 2026-09-12 09:25
+    arrive: 2026-09-12 17:05
+    seat: 42K
+    booked_via: Air New Zealand app
+    link: https://www.airnewzealand.co.nz/manage-booking
+
+  - confirmation: NZ-ABC123
+    airline: Air New Zealand
+    flight_no: NZ90
+    from: { airport: HND, city: Tokyo,    tz: Asia/Tokyo }
+    to:   { airport: AKL, city: Auckland, tz: Pacific/Auckland }
+    depart: 2026-09-26 22:30
+    arrive: 2026-09-27 12:40
+    seat: 42K
+    booked_via: Air New Zealand app
+    link: https://www.airnewzealand.co.nz/manage-booking
+
+# ---- Accommodation ----
+stays:
+  - confirmation: BDC-998877
+    name: Shinjuku Granbell Hotel
+    city: Tokyo
+    tz: Asia/Tokyo
+    check_in: 2026-09-12 15:00
+    check_out: 2026-09-18 11:00
+    address: 2-14-5 Kabukicho, Shinjuku, Tokyo
+    booked_via: Booking.com
+    link: https://www.booking.com/mytrips
+
+  - confirmation: EXP-554433
+    name: Kyoto Machiya Ryokan
+    city: Kyoto
+    tz: Asia/Tokyo
+    check_in: 2026-09-18 16:00
+    check_out: 2026-09-24 10:00
+    address: Higashiyama Ward, Kyoto
+    booked_via: Expedia
+    link: https://www.expedia.com/trips
+
+# ---- Cars / campervans ----
+cars:
+  - confirmation: RENT-112233
+    vendor: Nippon Rent-A-Car
+    type: Compact car
+    pickup:   { place: Kyoto Station, tz: Asia/Tokyo, time: 2026-09-19 09:00 }
+    dropoff:  { place: Kyoto Station, tz: Asia/Tokyo, time: 2026-09-21 18:00 }
+    booked_via: Expedia
+    link: https://www.expedia.com/trips
