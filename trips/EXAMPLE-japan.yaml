@@ -1,14 +1,19 @@
-# Sample trip. Copy this file per trip into trips/.
+# =====================================================================
+#  EXAMPLE / FAKE DATA — NOT A REAL BOOKING.
+#  Every flight, hotel, car, and confirmation number below is invented
+#  to demonstrate the file format. Delete this file once you understand
+#  the structure, and create real trips by copying its layout.
+# =====================================================================
 # All times are local to the place they happen. Use 24h "YYYY-MM-DD HH:MM".
 # tz is the IANA timezone for that event's location.
 
 trip:
-  name: Japan 2026
-  slug: 2026-japan          # used for the page URL and ics filename
+  name: "EXAMPLE — Japan 2026 (fake data, delete me)"
+  slug: example-japan        # used for the page URL and ics filename
   start: 2026-09-12
   end: 2026-09-26
-  travellers: [Matt, Sarah]
-  notes: Two weeks, Tokyo -> Kyoto -> Hakone.
+  travellers: [Example traveller 1, Example traveller 2]
+  notes: This is sample data only — not a real reservation.
 
 # ---- Flights ----
 flights:
