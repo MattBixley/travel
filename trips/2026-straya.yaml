@@ -1,0 +1,107 @@
+# All times are local to the place they happen. Use 24h "YYYY-MM-DD HH:MM".
+# tz is the IANA timezone for that event's location.
+
+trip:
+  name: "Straya 2026"
+  slug: example-japan        # used for the page URL and ics filename
+  start: 2026-08-22
+  end: 2026-08-30
+  travellers: [Annie, Matt]
+  notes: Australasian Rogaine Champs 2026
+
+# ---- Flights ----
+flights:
+  - reference: 5RETSH
+    airline: Air New Zealand
+    flight_no: NZ205
+    from: { airport: CHC, city: Christchurch, tz: NZST }
+    to:   { airport: BNE, city: Brisbane,   tz: AEST }
+    depart: 2026-08-22 06:00
+    arrive: 2026-08-22 08:05
+    seat: 3E, 3F
+    booked_via: Air New Zealand
+    link: https://www.airnewzealand.co.nz/identity/my-bookings
+
+  - reference: 5RETSH/D5PPD4
+    airline: Qantas/Alliance Airlines
+    flight_no: NZ2784
+    from: { airport: BNE, city: Brisbane,   tz: AEST }
+    to:   { airport: CNS, city: Cairns,   tz: AEST }
+    depart: 2026-08-22 14:25
+    arrive: 2026-08-22 16:55
+    seat: ??
+    booked_via: Air New Zealand 
+    link: https://www.airnewzealand.co.nz/identity/my-bookings
+
+ - reference: 5RETSH/D5PPD4
+    airline: Qantas/Alliance Airlines
+    flight_no: NZ2784
+    from: { airport: CNS, city: Cairns,   tz: AEST }
+    to:   { airport: BNE, city: Brisbane,   tz: AEST }
+    depart: 2026-08-28 06:00
+    arrive: 2026-08-28 08:15
+    seat: ??
+    booked_via: Air New Zealand 
+    link: https://www.airnewzealand.co.nz/identity/my-bookings
+
+  - reference: 5RETSH
+    airline: Air New Zealand
+    flight_no: NZ204
+    from:   { airport: BNE, city: Brisbane,   tz: AEST }
+    to: { airport: CHC, city: Christchurch, tz: NZST }
+    depart: 2026-08-30 19:10
+    arrive: 2026-08-31 00:40
+    seat: 5A, 5B
+    booked_via: Air New Zealand
+    link: https://www.airnewzealand.co.nz/identity/my-bookings
+
+# ---- Accommodation ----
+stays:
+  - confirmation: 5693693324
+    name: Novotel Christchurch Airport
+    city: Christchurch
+    tz: NZST
+    check_in: 2026-08-21 14:00
+    check_out: 2026-08-22 10:00
+    address: Christchurch Airport
+    booked_via: booking.com
+    link: 
+
+  - itinerary: 73460167741238
+    name: Ramada By Wyndham Cairns
+    city: Cairns
+    tz: AEST
+    check_in: 2026-08-22 14:00
+    check_out: 2026-08-23 10:00
+    address: Cnr Abbott And Florence Street, Cairns, QLD, 4870 Australia
+    booked_via: Air New Zealand
+    link: https://www.airnewzealand.co.nz/identity/my-bookings
+
+  - confirmation: 20445 Matt Bixley
+    name: Cape Tribulation Camping
+    city: Cape Tribulation
+    tz: AEST
+    check_in: 2026-08-23 14:00
+    check_out: 2026-08-25 10:00
+    address: 3812 Cape Tribulation Road, Cape Tribulation
+Queensland 4873 Australia
+    booked_via: www.capetribcamping.com.au
+    link: www.capetribcamping.com.au
+
+# ---- Cars / campervans ----
+cars:
+  - confirmation: 2285237
+    vendor: Star Motorhomes
+    type: Star Polaris 2
+    pickup:   { place: 55 Dutton Street, Cairns tz: AEST, time: 2026-08-23 10:00 }
+    dropoff:  { place: 55 Dutton Street, Cairns tz: AEST, time: 2026-08-27 15:00 }
+    booked_via: https://www.discovery-campervans.com.au
+    link: https://www.discovery-campervans.com.au
+
+  - confirmation: 46661011NZ5
+    vendor: Budget
+    type: Kia Sportage or Similar
+    pickup:   { place: Brisbane Apo, Terminal Building tz: AEST, time: 2026-08-28 09:00 }
+    dropoff:  { place: Brisbane Apo, Terminal Building tz: AEST, time: 2026-08-30 17:30 }
+    booked_via: Air New Zealand
+    link: https://www.airnewzealand.co.nz/identity/my-bookings
