@@ -11,7 +11,7 @@ trip:
 
 # ---- Flights ----
 flights:
-  - reference: 5RETSH
+  - confirmation: 5RETSH
     airline: Air New Zealand
     flight_no: NZ205
     from: { airport: CHC, city: Christchurch, tz: Pacific/Auckland }
@@ -22,7 +22,7 @@ flights:
     booked_via: Air New Zealand
     link: https://www.airnewzealand.co.nz/identity/my-bookings
 
-  - reference: 5RETSH/D5PPD4
+  - confirmation: 5RETSH/D5PPD4
     airline: Qantas/Alliance Airlines
     flight_no: NZ2784
     from: { airport: BNE, city: Brisbane, tz: Australia/Brisbane }
@@ -33,7 +33,7 @@ flights:
     booked_via: Air New Zealand
     link: https://www.airnewzealand.co.nz/identity/my-bookings
 
-  - reference: 5RETSH/D5PPD4
+  - confirmation: 5RETSH/D5PPD4
     airline: Qantas/Alliance Airlines
     flight_no: NZ2784
     from: { airport: CNS, city: Cairns,   tz: Australia/Brisbane }
@@ -44,7 +44,7 @@ flights:
     booked_via: Air New Zealand
     link: https://www.airnewzealand.co.nz/identity/my-bookings
 
-  - reference: 5RETSH
+  - confirmation: 5RETSH
     airline: Air New Zealand
     flight_no: NZ204
     from: { airport: BNE, city: Brisbane,     tz: Australia/Brisbane }
@@ -66,7 +66,7 @@ stays:
     address: Christchurch Airport
     booked_via: booking.com
 
-  - itinerary: 73460167741238
+  - confirmation: 73460167741238
     name: Ramada By Wyndham Cairns
     city: Cairns
     tz: Australia/Brisbane
@@ -103,3 +103,13 @@ cars:
     dropoff:  { place: "Brisbane Airport, Terminal Building", tz: Australia/Brisbane, time: 2026-08-30 17:30 }
     booked_via: Air New Zealand
     link: https://www.airnewzealand.co.nz/identity/my-bookings
+
+# ---- Activities ----
+activities:
+  - confirmation:
+    name: Great Barrier Scorkling
+    vendor: someome
+    pickup:   { place: "Great Barrier Reef", tz: Australia/Brisbane, time: 2026-08-23 08:00 }
+    dropoff:   { place: "Great Barrier Reef", tz: Australia/Brisbane, time: 2026-08-23 16:00 }
+    booked_via: https://www.discovery-campervans.com.au
+    link: https://www.discovery-campervans.com.au
