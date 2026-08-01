@@ -128,6 +128,27 @@ python generate.py          # writes docs/
 ```
 Then open `docs/index.html` in a browser. Useful if you want to check it before pushing.
 
+### Catching typos before you push
+
+`scripts/validate_trips.py` checks every trip file for the mistakes that actually break the
+build — unparseable YAML, a `tz` that isn't an IANA name (`AEST` instead of
+`Australia/Brisbane`), a date that isn't `YYYY-MM-DD HH:MM`, or a missing key:
+
+```bash
+python scripts/validate_trips.py           # check everything
+python scripts/validate_trips.py trips/2026-fiji.yaml
+```
+
+There's a pre-commit hook that runs it automatically on the files you're about to commit, so
+a broken trip file never reaches GitHub. Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The same check runs in CI, so the build fails with a readable error instead of a Python
+traceback if the hook was skipped.
+
 ---
 
 ## Part 3 — Publishing & GitHub Pages settings

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Reject a commit whose staged trip YAML would break `python generate.py` in CI.
+# Enable with:  git config core.hooksPath .githooks
+set -euo pipefail
+
+PY=$(command -v python3 || command -v python) || {
+    echo "pre-commit: no python found, skipping trip validation" >&2
+    exit 0
+}
+
+exec "$PY" "$(git rev-parse --show-toplevel)/scripts/validate_trips.py" --staged
