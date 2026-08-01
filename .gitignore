@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+
+# vim swap files, which have shown up in `git status` here before
+*.swp
+*.swo
+.*.sw?

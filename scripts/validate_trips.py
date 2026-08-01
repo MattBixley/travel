@@ -7,6 +7,9 @@ Checks the things that have actually broken the build:
   3. every date-time parses as "YYYY-MM-DD HH:MM"
   4. the keys generate.py dereferences are present
 
+It also warns — without failing — about locations that have no coordinates in
+places.yaml, since those are silently left off the trip map.
+
 Usage:
     validate_trips.py                 # check trips/*.yaml in the working tree
     validate_trips.py FILE [FILE...]  # check specific files
@@ -18,6 +21,8 @@ import subprocess
 import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     import yaml
@@ -104,19 +109,35 @@ def check_data(data, errors):
                     check_time(t, f"{w}.{end}.time", errors)
 
 
+def map_warnings(data):
+    """Locations with no coordinates. Not an error — they're just left off the map."""
+    try:
+        import places
+    except Exception:
+        return []
+    try:
+        _, misses = places.trip_points(data, places.load_places())
+    except Exception:
+        # A bad date or tz already shows up as a hard error above; don't
+        # double-report it as a map problem.
+        return []
+    return [f"no coordinates for {m!r} — it will be missing from the map "
+            f"(run: python scripts/geocode.py)" for m in misses]
+
+
 def check_source(label, text):
-    """Return a list of human-readable problems with one trip file."""
-    errors = []
+    """Return (errors, warnings) for one trip file."""
     try:
         data = yaml.safe_load(text)
     except yaml.YAMLError as e:
-        return [f"YAML will not parse:\n{e}"]
+        return [f"YAML will not parse:\n{e}"], []
     if data is None:
-        return ["file is empty"]
+        return ["file is empty"], []
     if not isinstance(data, dict):
-        return [f"top level must be a mapping, got {type(data).__name__}"]
+        return [f"top level must be a mapping, got {type(data).__name__}"], []
+    errors = []
     check_data(data, errors)
-    return errors
+    return errors, ([] if errors else map_warnings(data))
 
 
 def staged_trip_files():
@@ -151,7 +172,7 @@ def main(argv):
 
     failed = 0
     for label, text in sources:
-        errors = check_source(label, text)
+        errors, warnings = check_source(label, text)
         rel = os.path.relpath(label, ROOT) if os.path.isabs(label) else label
         if errors:
             failed += 1
@@ -160,6 +181,8 @@ def main(argv):
                 print(f"  - {e}")
         else:
             print(f"ok   {rel}")
+        for w in warnings:
+            print(f"  warning: {w}")
 
     if failed:
         print(f"\n{failed} trip file(s) would break the build.")

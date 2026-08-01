@@ -8,7 +8,11 @@ Reads every trips/*.yaml file and writes, into docs/ (GitHub Pages root):
   - docs/<slug>.ics         a calendar feed per trip (subscribe in your phone)
   - docs/all.ics            every event across all trips in one feed
 
-No third-party services. Only dependency: PyYAML  (pip install pyyaml)
+Build-time dependency: PyYAML only (pip install pyyaml). No network access —
+map coordinates are read from the committed places.yaml cache, never geocoded here.
+
+The trip pages do load Leaflet and OpenStreetMap tiles in the *viewer's* browser
+for the map; everything else on the page is self-contained.
 
 Run:  python generate.py
 """
@@ -16,6 +20,7 @@ Run:  python generate.py
 from __future__ import annotations
 import html
 import glob
+import json
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -24,6 +29,8 @@ try:
     import yaml
 except ImportError:
     raise SystemExit("Missing dependency. Run: pip install pyyaml")
+
+import places as places_mod
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 TRIPS_DIR = os.path.join(ROOT, "trips")
@@ -153,7 +160,72 @@ font-size:.9em;white-space:pre-line;margin-top:6px} .sub{margin:1em 0;padding:12
 background:#eef3ff;border-radius:10px;font-size:.92em} .card{display:block;background:#fff;
 border:1px solid #e3e6ea;border-radius:12px;padding:16px;margin:10px 0;text-decoration:none;color:inherit}
 .card:hover{border-color:#0a58ca}
+#map{height:360px;border:1px solid #e3e6ea;border-radius:12px;margin:1em 0;background:#e9edf1}
+.legend{color:#555;font-size:.86em;margin:-4px 0 1.5em}
+.legend b{font-weight:600} .dot{display:inline-block;width:10px;height:10px;border-radius:50%;
+margin:0 4px 0 12px;vertical-align:baseline} .dot:first-child{margin-left:0}
+.leaflet-popup-content{font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif}
+.leaflet-popup-content b{display:block;margin-bottom:2px}
 """
+
+LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+LEAFLET_CSS_SRI = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+LEAFLET_JS_SRI = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+
+# Circle markers are used instead of Leaflet's default pin so the page needs no
+# marker image files — only the CSS, the JS and the tiles.
+MAP_JS = """
+var PTS = __POINTS__;
+var COLOURS = __COLOURS__;
+var map = L.map('map', {scrollWheelZoom: false});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+var latlngs = PTS.map(function (p) { return [p.lat, p.lon]; });
+if (latlngs.length > 1) {
+  L.polyline(latlngs, {color: '#555', weight: 2, opacity: 0.55, dashArray: '5,6'}).addTo(map);
+}
+PTS.forEach(function (p, i) {
+  L.circleMarker([p.lat, p.lon], {
+    radius: 7, color: '#fff', weight: 2,
+    fillColor: COLOURS[p.kind] || '#666', fillOpacity: 1
+  }).addTo(map).bindPopup('<b>' + (i + 1) + '. ' + p.label + '</b>' + p.detail);
+});
+if (latlngs.length === 1) {
+  map.setView(latlngs[0], 11);
+} else {
+  map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+}
+"""
+
+
+def js_literal(value) -> str:
+    """JSON for embedding in a <script> block, with the tag-break escaped."""
+    return json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
+
+
+def map_section(points: list[dict]) -> str:
+    """The map div, legend and init script — or nothing if we have no coordinates."""
+    if not points:
+        return ""
+    payload = [dict(lat=round(p["lat"], 6), lon=round(p["lon"], 6),
+                    kind=p["kind"], label=p["label"], detail=p["detail"])
+               for p in points]
+    kinds = [k for k in ("flight", "stay", "car")
+             if any(p["kind"] == k for p in points)]
+    labels = {"flight": "Flights", "stay": "Stays", "car": "Cars"}
+    keys = "".join(
+        f'<span class="dot" style="background:{places_mod.KIND_COLOURS[k]}"></span>'
+        f'{labels[k]}' for k in kinds)
+    script = (MAP_JS
+              .replace("__POINTS__", js_literal(payload))
+              .replace("__COLOURS__", js_literal(places_mod.KIND_COLOURS)))
+    return (f'<div id="map"></div>\n'
+            f'<div class="legend"><b>Route in order</b> — numbered markers follow the '
+            f'timeline below. {keys}</div>\n'
+            f'<script>{script}</script>')
 
 def fmt_when(e: dict) -> str:
     s, en = e["start"], e["end"]
@@ -162,9 +234,10 @@ def fmt_when(e: dict) -> str:
     return f"{s.strftime('%a %d %b %Y, %H:%M')} → {en.strftime('%a %d %b %Y, %H:%M')}"
 
 
-def trip_html(data: dict, events: list[dict]) -> str:
+def trip_html(data: dict, events: list[dict], points: list[dict] | None = None) -> str:
     t = data["trip"]
     slug = t["slug"]
+    points = points or []
     rows = []
     for e in events:
         rows.append(
@@ -172,13 +245,22 @@ def trip_html(data: dict, events: list[dict]) -> str:
             f'<div class="when">{html.escape(fmt_when(e))}</div>'
             f'<div class="det">{html.escape(e["desc"])}</div></div>')
     travellers = ", ".join(t.get("travellers", []))
+    leaflet_head = ""
+    if points:
+        leaflet_head = (
+            f'<link rel="stylesheet" href="{LEAFLET_CSS}" '
+            f'integrity="{LEAFLET_CSS_SRI}" crossorigin="">'
+            f'<script src="{LEAFLET_JS}" integrity="{LEAFLET_JS_SRI}" '
+            f'crossorigin=""></script>')
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html.escape(t['name'])}</title><style>{PAGE_CSS}</style></head><body><div class="wrap">
+<title>{html.escape(t['name'])}</title><style>{PAGE_CSS}</style>{leaflet_head}</head>
+<body><div class="wrap">
 <p><a href="index.html">&larr; All trips</a></p>
 <h1>{html.escape(t['name'])}</h1>
 <div class="meta">{html.escape(str(t.get('start','')))} &ndash; {html.escape(str(t.get('end','')))}
 &middot; {html.escape(travellers)}</div>
+{map_section(points)}
 <div class="sub">Subscribe in your phone's calendar (and share with your wife):
 <br><code>{slug}.ics</code> &mdash; add by URL so updates sync automatically.</div>
 {''.join(rows)}
@@ -213,19 +295,22 @@ def main():
     if not files:
         raise SystemExit(f"No trip files found in {TRIPS_DIR}")
 
-    all_events, trips = [], []
+    coords = places_mod.load_places()
+    all_events, trips, all_misses = [], [], []
     for fp in files:
         with open(fp, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
         trips.append(data)
         evs = trip_events(data)
         all_events += evs
+        pts, misses = places_mod.trip_points(data, coords)
+        all_misses += misses
         slug = data["trip"]["slug"]
         with open(os.path.join(DOCS_DIR, f"{slug}.html"), "w", encoding="utf-8") as fh:
-            fh.write(trip_html(data, evs))
+            fh.write(trip_html(data, evs, pts))
         with open(os.path.join(DOCS_DIR, f"{slug}.ics"), "w", encoding="utf-8") as fh:
             fh.write(build_ics(evs, data["trip"]["name"]))
-        print(f"  {slug}: {len(evs)} events")
+        print(f"  {slug}: {len(evs)} events, {len(pts)} mapped")
 
     all_events.sort(key=lambda e: e["start"])
     with open(os.path.join(DOCS_DIR, "all.ics"), "w", encoding="utf-8") as fh:
@@ -234,6 +319,14 @@ def main():
         fh.write(index_html(trips))
 
     print(f"Done. {len(trips)} trip(s), {len(all_events)} events -> {DOCS_DIR}")
+
+    if all_misses:
+        print(f"\n{len(all_misses)} location(s) have no coordinates and were left off "
+              f"the maps:")
+        for m in all_misses:
+            print(f"  - {m}")
+        print("Fix with: python scripts/geocode.py   "
+              "(or add `coords: [lat, lon]` to the item)")
 
 
 if __name__ == "__main__":

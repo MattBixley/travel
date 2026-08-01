@@ -1,8 +1,8 @@
 # Travel Tracker
 
 A personal travel tracker: describe each trip in a small YAML file, and a script turns it
-into a shareable website and calendar feed. Optionally auto-fed from Gmail or paired with
-TripIt. No servers, all free.
+into a shareable website, a route map, and a calendar feed. Optionally auto-fed from Gmail or
+paired with TripIt. No servers, all free.
 
 Live site: **https://mattbixley.github.io/travel/**
 
@@ -32,7 +32,13 @@ Share the site URL with your wife, and both subscribe to
 ```
 trips/            one YAML file per trip   ← you edit these
 generate.py       builds docs/ from trips/
+places.py         resolves place names to map coordinates
+places.yaml       coordinate cache for the maps   ← commit this
+scripts/          geocode.py (fill places.yaml) + validate_trips.py (pre-push checks)
 docs/             generated site (published by GitHub Pages)
 apps-script/      optional Gmail → Google Calendar automation
 HOWTO.md          the full guide
 ```
+
+After adding a trip, run `python scripts/geocode.py` once to look up coordinates for the new
+places, and commit `places.yaml`. The build itself never geocodes.

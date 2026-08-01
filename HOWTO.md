@@ -20,9 +20,15 @@ travel-tracker/
 ├── trips/                    one YAML file per trip   ← you edit these
 │   └── EXAMPLE-japan.yaml     fake sample showing the format
 ├── generate.py               turns trips/ into the website + calendar feeds
+├── places.py                 resolves place names to map coordinates
+├── places.yaml               coordinate cache for the maps  ← commit this
+├── scripts/
+│   ├── geocode.py             fills places.yaml (run by hand, needs internet)
+│   └── validate_trips.py      checks trip files before they break the build
+├── .githooks/pre-commit      runs the validator on staged trip files
 ├── docs/                     generated output (this is what GitHub Pages publishes)
 │   ├── index.html             overview of all trips
-│   ├── <slug>.html            a timeline page per trip
+│   ├── <slug>.html            a timeline page per trip, with a map
 │   ├── <slug>.ics             calendar feed per trip
 │   └── all.ics                every trip in one feed
 ├── apps-script/Code.gs       optional Gmail → Google Calendar automation
@@ -127,6 +133,40 @@ pip install pyyaml          # once
 python generate.py          # writes docs/
 ```
 Then open `docs/index.html` in a browser. Useful if you want to check it before pushing.
+
+### The map on each trip page
+
+Every trip page opens with a map: one numbered marker per location, in the order you get
+there, joined by a dashed route line. Blue markers are flights, green are stays, orange are
+cars. Click a marker for the times. It's generated from the same YAML as the timeline, so
+there's nothing extra to keep in sync.
+
+Coordinates live in `places.yaml` — airports by IATA code, everything else by name. After
+adding a trip, fill in the new places:
+
+```bash
+python scripts/geocode.py       # looks up only what's missing
+git add places.yaml
+```
+
+`generate.py` never geocodes; it only reads that file, so builds stay offline and give the
+same result every time. Anything without coordinates is left off the map and named in the
+build output — the validator warns about it too.
+
+To move a marker, edit its numbers in `places.yaml`, or pin one location without touching the
+cache:
+
+```yaml
+  - name: Cape Tribulation Camping
+    coords: [-16.0958, 145.4640]     # wins over places.yaml
+```
+
+If a city has two airports, the IATA code is what saves you — `geocode.py` looks up
+`HND Airport` rather than `Tokyo Airport`, which resolves to Narita.
+
+**One caveat:** the map is the only part of the site that reaches outside the repo. A viewer's
+browser loads Leaflet from unpkg.com and tiles from openstreetmap.org, so those two hosts see
+requests for the page. Everything else — the timelines, the `.ics` files — is self-contained.
 
 ### Catching typos before you push
 
@@ -239,6 +279,19 @@ The workflow runs on pushes to `main`. If nothing appears in the Actions tab, ch
 Settings → Actions → General → Actions are allowed. You can also trigger it manually:
 Actions → Build travel site → Run workflow.
 
+**Build fails on a trip file** with a `yaml.parser.ParserError`, or a `ZoneInfoNotFoundError`.
+Run `python scripts/validate_trips.py` — it names the line and the problem. The usual causes are
+a list item indented one space instead of two, a value containing a comma that isn't quoted, or
+a `tz` written as an abbreviation (`AEST`) instead of an IANA name (`Australia/Brisbane`).
+
+**A location is missing from the map.** It has no coordinates yet. Run
+`python scripts/geocode.py` and commit `places.yaml`. If the geocoder can't find it either, add
+`coords: [lat, lon]` to that item in the trip file.
+
+**The map is blank or grey.** The page loads Leaflet from unpkg.com and tiles from
+openstreetmap.org, so a blocked CDN, an offline browser, or an ad-blocker filtering either host
+will leave an empty box. The timeline underneath still works.
+
 **WSL path confusion.** Your Windows folder is at `/mnt/c/Users/MattBixley/Code/travel-tracker`
 inside WSL (not `~/...` and not `/c/...`).
 
@@ -264,6 +317,8 @@ The remote has a commit you don't (e.g. a README created on GitHub).
 | Add a flight / hotel / car | Add a `-` item under `flights` / `stays` / `cars` |
 | Add a campervan | Add under `cars` with `type: ... campervan` |
 | Publish changes | `git push` — the Action rebuilds the site |
+| Add map pins for a new trip | `python scripts/geocode.py`, then commit `places.yaml` |
+| Check a trip file before pushing | `python scripts/validate_trips.py` |
 | Preview before pushing | `python generate.py` then open `docs/index.html` |
 | Share with wife | Send the site URL + both subscribe to `all.ics` |
 | Remove the fake example | Delete `trips/EXAMPLE-japan.yaml`, commit, push |
