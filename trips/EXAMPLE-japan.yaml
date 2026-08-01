@@ -58,10 +58,11 @@ stays:
     check_in: 2026-09-18 16:00
     check_out: 2026-09-24 10:00
     address: Higashiyama Ward, Kyoto
-    # Optional. Map coordinates normally come from places.yaml (see
-    # `python scripts/geocode.py`); set coords here to override or to pin
-    # somewhere a geocoder can't find.
-    coords: [34.998, 135.7788]
+    # Optional, and only needed to place a pin exactly. Coordinates are otherwise
+    # looked up from the names above, automatically, when the site builds.
+    # Right-click the spot in Google Maps -> "Copy coordinates" -> paste here.
+    # A Maps URL works too, as does 34°59'52.8"N 135°46'43.7"E.
+    location: 34.998, 135.7788
     booked_via: Expedia
     link: https://www.expedia.com/trips
 

@@ -83,7 +83,12 @@ def main(argv):
         if not args.force:
             if code and code in cache["airports"]:
                 continue
-            if any(norm(q) in cache["places"] for q in queries):
+            # Only the *most specific* candidate counts as cached. If a broader
+            # fallback happens to be in the cache already (an activity's `address:
+            # Great Barrier Reef` when its `place:` is Port Douglas), we still want
+            # the specific name looked up — otherwise the pin sticks on the vague
+            # one forever, because nothing ever asks about the precise one.
+            if norm(queries[0]) in cache["places"]:
                 continue
         key = ("airport", code) if code else ("place", norm(queries[0]))
         if key not in [k for k, _ in todo]:

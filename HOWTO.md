@@ -174,28 +174,66 @@ Two ways to get a bigger map:
   `<slug>-map.html` — a page that is nothing but the map, with a link back to the timeline.
   Handy for a second monitor, or for sending someone just the map.
 
-Coordinates live in `places.yaml` — airports by IATA code, everything else by name. After
-adding a trip, fill in the new places:
+#### You don't have to do anything — pins appear by themselves
 
-```bash
-python scripts/geocode.py       # looks up only what's missing
-git add places.yaml
-```
+Coordinates are looked up from the names already in your trip file (`place`, `address`,
+`city`, `name`, or the airport code). The build workflow does this for you: push a new
+booking, and the Action geocodes anything it hasn't seen, saves it to `places.yaml`, and
+commits that back to the repo so the next build doesn't ask again.
 
-`generate.py` never geocodes; it only reads that file, so builds stay offline and give the
-same result every time. Anything without coordinates is left off the map and named in the
-build output — the validator warns about it too.
+So the normal flow for a new hotel or tour is: write it, push it, done.
 
-To move a marker, edit its numbers in `places.yaml`, or pin one location without touching the
-cache:
+#### When you want the pin in an exact spot: `location:`
+
+Automatic lookup puts the pin on whatever the geocoder thinks the name means, which can be
+vague — "Great Barrier Reef" lands somewhere out at sea. To place it precisely, right-click
+the spot in Google Maps, choose **Copy coordinates**, and paste it into `location:` on that
+entry:
 
 ```yaml
-  - name: Cape Tribulation Camping
-    coords: [-16.0958, 145.4640]     # wins over places.yaml
+activities:
+  - name: Great Barrier Snorkeling
+    place: Port Douglas
+    location: -16.4846, 145.4636        # exactly here, no lookup
 ```
 
-If a city has two airports, the IATA code is what saves you — `geocode.py` looks up
-`HND Airport` rather than `Tokyo Airport`, which resolves to Narita.
+`location:` takes any of the forms Google Maps hands you, so you can paste without editing:
+
+| What you paste | Example |
+|---|---|
+| Copied coordinates | `-16.4846, 145.4636` |
+| Degrees/minutes/seconds | `16°29'04.6"S 145°27'49.1"E` |
+| A Maps URL | `https://www.google.com/maps/@-16.4846,145.4636,15z` |
+| A shared place URL | `https://www.google.com/maps/place/Port+Douglas/@-16.48,145.46,14z/data=!3d-16.4846!4d145.4636` |
+| List form | `coords: [-16.4846, 145.4636]` |
+
+`location:` works on any entry, including a flight's `from:`/`to:` and a car's
+`pickup:`/`dropoff:`. It always wins over a name lookup, and a `location:` that isn't a
+coordinate fails validation rather than quietly doing nothing.
+
+#### Running the lookup yourself
+
+You never need to, but it's there if you want to see the result before pushing:
+
+```bash
+python scripts/geocode.py             # looks up only what's missing
+python scripts/geocode.py --dry-run   # just show what it would look up
+python scripts/geocode.py --force     # re-look-up everything
+```
+
+`generate.py` itself never geocodes — it only reads `places.yaml` — so a build always gives
+the same result from the same inputs. Anything with no coordinates is left off the map and
+named in the build output, and the validator warns about it too.
+
+To move an existing marker, edit its numbers in `places.yaml`, or add a `location:` to the
+entry, which overrides the cache.
+
+Two details that matter for accuracy:
+
+- **Multi-airport cities**: the IATA code is looked up first, so an HND flight pins Haneda.
+  `Tokyo Airport` would resolve to Narita.
+- **The most specific name wins**: for an entry with `place: Port Douglas` and
+  `address: Great Barrier Reef`, the lookup is on `place`. That's the pin you want.
 
 **One caveat:** the map is the only part of the site that reaches outside the repo. A viewer's
 browser loads Leaflet from unpkg.com and tiles from openstreetmap.org, so those two hosts see
@@ -229,11 +267,17 @@ the `docs/` folder committed in the repo is ignored by the deploy, so it doesn't
 it's stale.
 
 1. **Validate** the trip files (`scripts/validate_trips.py`) — fails fast with a readable error.
-2. **Build** the site (`generate.py`) — writes `docs/` fresh from `trips/`.
-3. **Render-check** every page in a real headless browser (`scripts/render_check.js`) — loads
+2. **Geocode** any place it hasn't seen (`scripts/geocode.py`) and commit the result back to
+   `places.yaml`, so new bookings get pins without you doing anything. This step can't fail
+   the build: if the geocoder is unreachable, the place is just left off the map and reported.
+3. **Build** the site (`generate.py`) — writes `docs/` fresh from `trips/`.
+4. **Render-check** every page in a real headless browser (`scripts/render_check.js`) — loads
    each map, and fails the build on any JavaScript error or if the number of shapes drawn
    doesn't match the number of locations the generator emitted.
-4. **Deploy** `docs/` to GitHub Pages.
+5. **Deploy** `docs/` to GitHub Pages.
+
+Step 2 means the repo will occasionally get a commit from `github-actions[bot]` adding
+coordinates. That's expected — `git pull` before your next edit.
 
 Step 3 exists because the map is JavaScript, and valid HTML proves nothing about it. Every
 marker on the site once failed to draw while the markup was perfectly well formed — Leaflet

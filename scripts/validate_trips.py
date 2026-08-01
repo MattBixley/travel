@@ -135,6 +135,56 @@ def check_data(data, errors):
                     check_time(t, f"{w}.{end}.time", errors)
 
 
+def all_items(data):
+    """(label, dict) for every entry in every section, including flight endpoints.
+
+    Used to check `location:` wherever it appears, since any entry may carry one.
+    """
+    out = []
+    for i, f in enumerate(data.get("flights") or [], 1):
+        out.append((f"flights[{i}]", f))
+        for end in ("from", "to"):
+            if isinstance(f.get(end), dict):
+                out.append((f"flights[{i}].{end}", f[end]))
+    for name in ("stays", "activities"):
+        for i, item in enumerate(data.get(name) or [], 1):
+            if isinstance(item, dict):
+                out.append((f"{name}[{i}]", item))
+    for i, c in enumerate(data.get("cars") or [], 1):
+        out.append((f"cars[{i}]", c))
+        for end in ("pickup", "dropoff"):
+            if isinstance(c.get(end), dict):
+                out.append((f"cars[{i}].{end}", c[end]))
+    try:
+        import places
+        for section, items in places.generic_sections(data):
+            for i, item in enumerate(items, 1):
+                out.append((f"{section}[{i}]", item))
+                for end in ("pickup", "dropoff"):
+                    if isinstance(item.get(end), dict):
+                        out.append((f"{section}[{i}].{end}", item[end]))
+    except Exception:
+        pass
+    return out
+
+
+def check_locations(data, errors):
+    """A `location:` that can't be read is an error — it would silently do nothing."""
+    try:
+        import places
+    except Exception:
+        return
+    for label, item in all_items(data):
+        raw = item.get("location")
+        if raw is None or (isinstance(raw, str) and not raw.strip()):
+            continue
+        if places.parse_location(raw) is None:
+            errors.append(
+                f"{label}: location {raw!r} isn't a coordinate. Use a decimal pair "
+                f"(-16.4841, 145.4650), a degrees/minutes/seconds pair, or a Google "
+                f"Maps URL. For a place name, use `place:` or `address:` instead.")
+
+
 def generic_section_warnings(data):
     """Flag entries in an unrecognised section that the generator will skip.
 
@@ -189,6 +239,7 @@ def check_source(label, text):
         return [f"top level must be a mapping, got {type(data).__name__}"], []
     errors = []
     check_data(data, errors)
+    check_locations(data, errors)
     if errors:
         return errors, []
     return errors, generic_section_warnings(data) + map_warnings(data)

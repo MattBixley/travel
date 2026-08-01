@@ -2,17 +2,21 @@
 """Turn the places in a trip file into map coordinates.
 
 Lookups are offline — generate.py never touches the network. Coordinates come from
-one of two places, in this order:
+the first of these that answers:
 
-  1. an explicit `coords: [lat, lon]` on the item itself
-  2. places.yaml, the committed coordinate cache
+  1. `location:` on the item — anything Google Maps gives you: a decimal pair, a
+     degrees/minutes/seconds pair, or a Maps URL. Use this to pin a spot exactly.
+  2. `coords: [lat, lon]` on the item — the same thing in list form.
+  3. places.yaml, the committed coordinate cache, looked up by name.
 
-`scripts/geocode.py` fills places.yaml in for you. Anything that can't be resolved
-is reported as a miss and simply left off the map.
+`scripts/geocode.py` fills places.yaml in from the names already in the trip file,
+and the build workflow runs it, so a new booking normally needs nothing from you.
+Anything still unresolved is reported as a miss and left off the map.
 """
 from __future__ import annotations
 
 import os
+import re
 
 try:
     import yaml
@@ -66,6 +70,88 @@ def as_latlon(value):
     if not (-90 <= lat <= 90 and -180 <= lon <= 180):
         return None
     return (lat, lon)
+
+
+# --------------------------------------------------------- location: parsing
+#
+# `location:` takes whatever Google Maps gives you, so you can right-click a spot,
+# "Copy coordinates", and paste. All of these mean the same place:
+#
+#   location: -16.4841, 145.4650
+#   location: 16°29'02.8"S 145°27'54.0"E
+#   location: https://www.google.com/maps/@-16.4841,145.4650,15z
+#   location: https://maps.google.com/?q=-16.4841,145.4650
+
+# Decimal pair: "-16.4841, 145.4650" or "-16.4841 145.4650".
+_DECIMAL_PAIR = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$")
+
+# "@lat,lon" as it appears in a Google Maps URL, and the ?q= / ?ll= forms.
+_URL_AT = re.compile(r"@(-?\d+\.\d+),\s*(-?\d+\.\d+)")
+_URL_QUERY = re.compile(r"[?&](?:q|ll|center|daddr)=(-?\d+\.\d+),\s*(-?\d+\.\d+)")
+# The pin's own coordinates inside a Maps "data=" blob: !3d<lat>!4d<lon>.
+_URL_DATA = re.compile(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)")
+
+# One degrees/minutes/seconds component with its hemisphere letter, e.g.
+# 16°29'02.8"S — minutes and seconds are both optional.
+_DMS = re.compile(r"""
+    (\d+(?:\.\d+)?)\s*[°d]?\s*                 # degrees
+    (?:(\d+(?:\.\d+)?)\s*['′m]\s*)?            # minutes
+    (?:(\d+(?:\.\d+)?)\s*(?:["″]|''|s)?\s*)?   # seconds
+    ([NSEW])                                   # hemisphere
+""", re.IGNORECASE | re.VERBOSE)
+
+
+def _dms_to_decimal(deg: str, minutes, seconds, hemi: str) -> float:
+    value = float(deg) + (float(minutes or 0) / 60) + (float(seconds or 0) / 3600)
+    return -value if hemi.upper() in ("S", "W") else value
+
+
+def parse_location(value) -> tuple[float, float] | None:
+    """Coordinates from a pasted Google Maps reference. None if it isn't one.
+
+    Accepts a decimal pair, a degrees/minutes/seconds pair, a Google Maps URL, or
+    the [lat, lon] list form that `coords:` uses.
+    """
+    if value is None:
+        return None
+    # A YAML list or mapping is already structured — reuse the strict reader.
+    if isinstance(value, (list, tuple, dict)):
+        return as_latlon(value)
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    # URLs first: they contain zoom levels and other numbers that would otherwise
+    # be misread as a coordinate pair.
+    if "http" in text or "!3d" in text or "@" in text:
+        for pattern in (_URL_DATA, _URL_AT, _URL_QUERY):
+            m = pattern.search(text)
+            if m:
+                return as_latlon([m.group(1), m.group(2)])
+
+    # Degrees/minutes/seconds, e.g. 16°29'02.8"S 145°27'54.0"E
+    dms = _DMS.findall(text)
+    if len(dms) >= 2:
+        first = _dms_to_decimal(*dms[0])
+        second = _dms_to_decimal(*dms[1])
+        # Accept either order — Google writes lat first, but be forgiving.
+        if dms[0][3].upper() in ("E", "W"):
+            first, second = second, first
+        return as_latlon([first, second])
+
+    m = _DECIMAL_PAIR.match(text)
+    if m:
+        return as_latlon([m.group(1), m.group(2)])
+
+    return None
+
+
+def item_coords(item: dict):
+    """Explicit coordinates for one entry: `location:` first, then `coords:`."""
+    if not isinstance(item, dict):
+        return None
+    return parse_location(item.get("location")) or as_latlon(item.get("coords"))
 
 
 def load_places(path: str = PLACES_FILE) -> dict:
@@ -225,7 +311,7 @@ def activity_queries(act: dict) -> list[str]:
 
 def resolve_side(side: dict, places: dict):
     """Coordinates for one end of a flight: explicit coords, then airport code, then name."""
-    ll = as_latlon(side.get("coords"))
+    ll = item_coords(side)
     if ll:
         return ll, None
     code = str(side.get("airport", "")).strip().upper()
@@ -267,7 +353,7 @@ def trip_points(data: dict, places: dict) -> tuple[list[dict], list[str]]:
 
     for s in data.get("stays") or []:
         ci = parse_local(s["check_in"], s["tz"])
-        ll = as_latlon(s.get("coords")) or _lookup(places, stay_queries(s))
+        ll = item_coords(s) or _lookup(places, stay_queries(s))
         if not ll:
             misses.append(stay_queries(s)[0] if stay_queries(s) else "?")
             continue
@@ -281,7 +367,7 @@ def trip_points(data: dict, places: dict) -> tuple[list[dict], list[str]]:
         for end, time_key in (("pickup", "time"), ("dropoff", "time")):
             leg = c[end]
             when = parse_local(leg[time_key], leg["tz"])
-            ll = as_latlon(leg.get("coords")) or _lookup(places, car_queries(leg, c))
+            ll = item_coords(leg) or _lookup(places, car_queries(leg, c))
             if not ll:
                 misses.append(car_queries(leg, c)[0] if car_queries(leg, c) else "?")
                 continue
@@ -301,7 +387,7 @@ def trip_points(data: dict, places: dict) -> tuple[list[dict], list[str]]:
     for raw in data.get("activities") or []:
         a = normalise_activity(raw)
         st = parse_local(a["start"], a["start_tz"])
-        ll = as_latlon(a.get("coords")) or _lookup(places, activity_queries(raw))
+        ll = item_coords(a) or _lookup(places, activity_queries(raw))
         if not ll:
             qs = activity_queries(raw)
             misses.append(qs[0] if qs else "?")
@@ -322,7 +408,7 @@ def trip_points(data: dict, places: dict) -> tuple[list[dict], list[str]]:
                 st = parse_local(a["start"], a["start_tz"])
             except Exception:
                 continue
-            ll = as_latlon(a.get("coords")) or _lookup(places, activity_queries(raw))
+            ll = item_coords(a) or _lookup(places, activity_queries(raw))
             if not ll:
                 qs = activity_queries(raw)
                 if qs:
@@ -351,22 +437,22 @@ def all_queries(data: dict) -> list[str]:
     out = []
     for f in data.get("flights") or []:
         for side in (f["from"], f["to"]):
-            if not as_latlon(side.get("coords")):
+            if not item_coords(side):
                 out.append((str(side.get("airport", "")).strip().upper(),
                             flight_endpoint_queries(side)))
     for s in data.get("stays") or []:
-        if not as_latlon(s.get("coords")):
+        if not item_coords(s):
             out.append((None, stay_queries(s)))
     for c in data.get("cars") or []:
         for end in ("pickup", "dropoff"):
-            if not as_latlon(c[end].get("coords")):
+            if not item_coords(c[end]):
                 out.append((None, car_queries(c[end], c)))
     for a in data.get("activities") or []:
-        if not as_latlon(a.get("coords")):
+        if not item_coords(a):
             out.append((None, activity_queries(a)))
     for _, items in generic_sections(data):
         for a in items:
-            if not as_latlon(a.get("coords")):
+            if not item_coords(a):
                 qs = activity_queries(a)
                 if qs:
                     out.append((None, qs))
