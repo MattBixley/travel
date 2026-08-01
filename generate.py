@@ -80,9 +80,14 @@ def fold(line: str) -> str:
 
 # ---------------------------------------------------------------- model
 
-def trip_events(data: dict) -> list[dict]:
-    """Flatten a trip dict into a list of calendar events."""
+def trip_events(data: dict, notes: list[str] | None = None) -> list[dict]:
+    """Flatten a trip dict into a list of calendar events.
+
+    Anything appended to `notes` is a message for the person running the build —
+    used for sections we handled generically, and for entries we had to skip.
+    """
     events = []
+    notes = notes if notes is not None else []
     slug = data["trip"]["slug"]
 
     for f in data.get("flights") or []:
@@ -149,6 +154,44 @@ def trip_events(data: dict) -> list[dict]:
                            start=st, end=en, summary=summary, desc=desc,
                            location=where, kind="activity"))
 
+    # Any other top-level section is handled generically: if an entry has a time
+    # and a timezone we give it an event and a map pin, so a brand-new section
+    # works without editing this file.
+    for section, items in places_mod.generic_sections(data):
+        mapped = 0
+        for raw in items:
+            a = places_mod.normalise_activity(raw)
+            label = field(a, "name", section.rstrip("s").title())
+            if a.get("start") is None:
+                notes.append(f"{slug}: {section} entry {label!r} has no `start:` "
+                             f"(or `time:`/`pickup:`) — skipped")
+                continue
+            if a.get("start_tz") is None:
+                notes.append(f"{slug}: {section} entry {label!r} has no `tz:` — skipped")
+                continue
+            try:
+                st = parse_local(a["start"], a["start_tz"])
+                en = (parse_local(a["end"], a["end_tz"]) if a.get("end")
+                      else st + timedelta(hours=1))
+            except Exception as e:
+                notes.append(f"{slug}: {section} entry {label!r} has an unusable "
+                             f"time or timezone ({e}) — skipped")
+                continue
+            where = a.get("place") or a.get("address") or a.get("city") or ""
+            desc = (f"{label}\n{where}\n"
+                    f"Confirmation: {field(a, 'confirmation')}\n"
+                    f"Booked via: {field(a, 'booked_via')}\n"
+                    f"{field(a, 'notes', '')}\n{field(a, 'link', '')}")
+            events.append(dict(
+                uid=f"{slug}-{section}-{field(a, 'confirmation', '')}-{to_utc_stamp(st)}",
+                start=st, end=en, summary=f"\U0001f4cc {label}", desc=desc,
+                location=where, kind="other"))
+            mapped += 1
+        if mapped:
+            notes.append(f"{slug}: section {section!r} has no dedicated styling — "
+                         f"{mapped} entr{'y' if mapped == 1 else 'ies'} shown as "
+                         f"'Other' on the map")
+
     events.sort(key=lambda e: e["start"])
     return events
 
@@ -183,7 +226,7 @@ h1{margin:.2em 0} a{color:#0a58ca} .meta{color:#666;margin-bottom:1.5em}
 .ev{background:#fff;border:1px solid #e3e6ea;border-radius:12px;padding:14px 16px;margin:10px 0;
 border-left:5px solid #999} .ev.flight{border-left-color:#0a58ca}
 .ev.stay{border-left-color:#1a9e6c} .ev.car{border-left-color:#d97706}
-.ev.activity{border-left-color:#7c3aed}
+.ev.activity{border-left-color:#7c3aed} .ev.other{border-left-color:#0891b2}
 .ev h3{margin:0 0 4px} .ev .when{color:#444;font-size:.92em} .ev .det{color:#555;
 font-size:.9em;white-space:pre-line;margin-top:6px} .sub{margin:1em 0;padding:12px 16px;
 background:#eef3ff;border-radius:10px;font-size:.92em} .card{display:block;background:#fff;
@@ -215,6 +258,16 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 var latlngs = PTS.map(function (p) { return [p.lat, p.lon]; });
 
+// Set the view BEFORE adding any vector layer. Leaflet's SVG renderer has no
+// bounds until the map has a centre and zoom, and adding a circleMarker first
+// throws "Cannot read properties of undefined (reading 'intersects')" — which
+// silently costs you every marker and the route line.
+if (latlngs.length === 1) {
+  map.setView(latlngs[0], 11);
+} else {
+  map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+}
+
 // One toggleable layer per kind, so flights/stays/cars/activities can be
 // switched on and off independently. The route line is its own layer.
 var groups = {};
@@ -240,17 +293,11 @@ if (latlngs.length > 1) {
   overlays['Route order'] = route;
 }
 L.control.layers(null, overlays, {collapsed: false, position: 'topright'}).addTo(map);
-
-if (latlngs.length === 1) {
-  map.setView(latlngs[0], 11);
-} else {
-  map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
-}
 """
 
 # Display names for the map's layer toggle, in the order they appear in it.
-KIND_LABELS = {"flight": "Flights", "stay": "Stays",
-               "car": "Cars", "activity": "Activities"}
+KIND_LABELS = {"flight": "Flights", "stay": "Stays", "car": "Cars",
+               "activity": "Activities", "other": "Other"}
 
 
 def js_literal(value) -> str:
@@ -344,12 +391,14 @@ def main():
         raise SystemExit(f"No trip files found in {TRIPS_DIR}")
 
     coords = places_mod.load_places()
-    all_events, trips, all_misses = [], [], []
+    all_events, trips, all_misses, all_notes = [], [], [], []
     for fp in files:
         with open(fp, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
         trips.append(data)
-        evs = trip_events(data)
+        notes = []
+        evs = trip_events(data, notes)
+        all_notes += notes
         all_events += evs
         pts, misses = places_mod.trip_points(data, coords)
         all_misses += misses
@@ -367,6 +416,11 @@ def main():
         fh.write(index_html(trips))
 
     print(f"Done. {len(trips)} trip(s), {len(all_events)} events -> {DOCS_DIR}")
+
+    if all_notes:
+        print()
+        for n in all_notes:
+            print(f"  note: {n}")
 
     if all_misses:
         print(f"\n{len(all_misses)} location(s) have no coordinates and were left off "

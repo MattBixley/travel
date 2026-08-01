@@ -212,6 +212,45 @@ git config core.hooksPath .githooks
 The same check runs in CI, so the build fails with a readable error instead of a Python
 traceback if the hook was skipped.
 
+### What the GitHub Action actually does
+
+You never build locally. Every push to `main` runs the whole chain and publishes the result —
+the `docs/` folder committed in the repo is ignored by the deploy, so it doesn't matter that
+it's stale.
+
+1. **Validate** the trip files (`scripts/validate_trips.py`) — fails fast with a readable error.
+2. **Build** the site (`generate.py`) — writes `docs/` fresh from `trips/`.
+3. **Render-check** every page in a real headless browser (`scripts/render_check.js`) — loads
+   each map, and fails the build on any JavaScript error or if the number of shapes drawn
+   doesn't match the number of locations the generator emitted.
+4. **Deploy** `docs/` to GitHub Pages.
+
+Step 3 exists because the map is JavaScript, and valid HTML proves nothing about it. Every
+marker on the site once failed to draw while the markup was perfectly well formed — Leaflet
+threw because the map had no view set yet, and nothing in the build noticed. The render check
+catches that class of bug, and it verified this specific one before the fix shipped.
+
+### Adding a section the code has never heard of
+
+You don't have to touch the Python to add a new kind of booking. Any top-level list is picked
+up automatically: entries get a calendar event and a teal "Other" pin on the map, as long as
+each has a place and a time.
+
+```yaml
+ferries:                                  # a section that doesn't exist in the code
+  - name: Cairns to Fitzroy Island
+    place: Reef Fleet Terminal
+    city: Cairns
+    tz: Australia/Brisbane
+    start: 2026-08-22 09:00               # `time:` works too
+    end: 2026-08-22 09:45                 # optional
+```
+
+The build prints a note telling you the section was handled generically, and the validator
+warns about any entry missing a time or `tz` — those are skipped rather than silently
+mangled. If a section deserves its own colour and icon, that's a small change in
+`generate.py` (`trip_events`) and `places.py` (`KIND_COLOURS`).
+
 ---
 
 ## Part 3 — Publishing & GitHub Pages settings

@@ -24,7 +24,24 @@ PLACES_FILE = os.path.join(ROOT, "places.yaml")
 
 # Marker colours, matching the timeline's left borders in PAGE_CSS.
 KIND_COLOURS = {"flight": "#0a58ca", "stay": "#1a9e6c",
-                "car": "#d97706", "activity": "#7c3aed"}
+                "car": "#d97706", "activity": "#7c3aed", "other": "#0891b2"}
+
+# Top-level keys with dedicated handling. Anything else that looks like a list of
+# bookings is mapped generically, so adding a section to a trip file puts pins on
+# the map without needing a code change here.
+KNOWN_SECTIONS = {"trip", "flights", "stays", "cars", "activities"}
+
+
+def generic_sections(data: dict) -> list[tuple[str, list[dict]]]:
+    """(name, items) for every top-level section we have no special case for."""
+    out = []
+    for key, value in (data or {}).items():
+        if key in KNOWN_SECTIONS or not isinstance(value, list):
+            continue
+        items = [i for i in value if isinstance(i, dict)]
+        if items:
+            out.append((key, items))
+    return out
 
 
 def norm(s) -> str:
@@ -165,10 +182,14 @@ def normalise_activity(act: dict) -> dict:
     keys. `end` may be None, which generate.py turns into an hour.
     """
     out = dict(act)
+    # `time:` is accepted as an alias for `start:` — it's what people reach for
+    # when a section only has one moment in it.
+    if out.get("start") is None and out.get("time") is not None:
+        out["start"] = out["time"]
     pickup, dropoff = act.get("pickup"), act.get("dropoff")
     if isinstance(pickup, dict):
         out.setdefault("place", pickup.get("place"))
-        out["start"] = pickup.get("time", act.get("start"))
+        out["start"] = pickup.get("time", out.get("start"))
         out["start_tz"] = pickup.get("tz", act.get("tz"))
         if isinstance(dropoff, dict):
             out["end"] = dropoff.get("time")
@@ -292,6 +313,29 @@ def trip_points(data: dict, places: dict) -> tuple[list[dict], list[str]]:
             lat=ll[0], lon=ll[1], kind="activity", when=st,
             label=str(a.get("name", "Activity")), detail=detail))
 
+    for section, items in generic_sections(data):
+        for raw in items:
+            a = normalise_activity(raw)
+            if a.get("start") is None or a.get("start_tz") is None:
+                continue        # generate.py reports these; don't map a guess
+            try:
+                st = parse_local(a["start"], a["start_tz"])
+            except Exception:
+                continue
+            ll = as_latlon(a.get("coords")) or _lookup(places, activity_queries(raw))
+            if not ll:
+                qs = activity_queries(raw)
+                if qs:
+                    misses.append(qs[0])
+                continue
+            detail = st.strftime("%a %d %b, %H:%M")
+            if a.get("place"):
+                detail += f" · {a['place']}"
+            points.append(dict(
+                lat=ll[0], lon=ll[1], kind="other", when=st,
+                label=str(a.get("name") or section.rstrip("s").title()),
+                detail=detail))
+
     points.sort(key=lambda p: p["when"])
     # Preserve order but drop duplicate miss queries.
     seen_miss, unique = set(), []
@@ -320,4 +364,10 @@ def all_queries(data: dict) -> list[str]:
     for a in data.get("activities") or []:
         if not as_latlon(a.get("coords")):
             out.append((None, activity_queries(a)))
+    for _, items in generic_sections(data):
+        for a in items:
+            if not as_latlon(a.get("coords")):
+                qs = activity_queries(a)
+                if qs:
+                    out.append((None, qs))
     return out

@@ -18,15 +18,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+
       - run: pip install pyyaml
+
+      # Catches the mistakes that break the build outright: unparseable YAML, a
+      # tz abbreviation ZoneInfo can't load, a malformed date. Also warns about
+      # locations with no coordinates and about sections with no dedicated
+      # handling, without failing for either.
       - name: Validate trip YAML
         run: python scripts/validate_trips.py
-      - run: python generate.py
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Build the site
+        run: python generate.py
+
+      # The map is JavaScript, so valid HTML proves nothing about it — every
+      # marker once failed to draw on markup that was perfectly well formed.
+      # Load each page in a real browser and check the shapes actually rendered.
+      - name: Install headless browser
+        run: npm install --no-save puppeteer@24
+      - name: Check the maps render
+        run: node scripts/render_check.js
+
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs
 
@@ -38,4 +58,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

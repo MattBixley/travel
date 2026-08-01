@@ -135,6 +135,32 @@ def check_data(data, errors):
                     check_time(t, f"{w}.{end}.time", errors)
 
 
+def generic_section_warnings(data):
+    """Flag entries in an unrecognised section that the generator will skip.
+
+    A new top-level section still gets events and map pins, but only if each entry
+    has a time and a timezone — warn rather than let one vanish quietly.
+    """
+    out = []
+    try:
+        import places
+    except Exception:
+        return out
+    for section, items in places.generic_sections(data):
+        out.append(f"section {section!r} has no dedicated handling — its entries will "
+                   f"appear as generic 'Other' pins on the map")
+        for i, raw in enumerate(items, 1):
+            a = places.normalise_activity(raw)
+            label = a.get("name") or f"{section}[{i}]"
+            if a.get("start") is None:
+                out.append(f"{section}[{i}] {label!r} has no `start:` (or `time:` / "
+                           f"`pickup:`) — it will be left out entirely")
+            elif a.get("start_tz") is None:
+                out.append(f"{section}[{i}] {label!r} has no `tz:` — it will be left "
+                           f"out entirely")
+    return out
+
+
 def map_warnings(data):
     """Locations with no coordinates. Not an error — they're just left off the map."""
     try:
@@ -163,7 +189,9 @@ def check_source(label, text):
         return [f"top level must be a mapping, got {type(data).__name__}"], []
     errors = []
     check_data(data, errors)
-    return errors, ([] if errors else map_warnings(data))
+    if errors:
+        return errors, []
+    return errors, generic_section_warnings(data) + map_warnings(data)
 
 
 def staged_trip_files():
