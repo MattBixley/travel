@@ -233,7 +233,11 @@ background:#eef3ff;border-radius:10px;font-size:.92em} .card{display:block;backg
 border:1px solid #e3e6ea;border-radius:12px;padding:16px;margin:10px 0;text-decoration:none;color:inherit}
 .card:hover{border-color:#0a58ca}
 #map{height:360px;border:1px solid #e3e6ea;border-radius:12px;margin:1em 0;background:#e9edf1}
-.legend{color:#555;font-size:.86em;margin:-4px 0 1.5em}
+#map:fullscreen,#map:-webkit-full-screen{height:100%;width:100%;border:0;border-radius:0}
+.map-fs-btn{font-size:18px;line-height:26px;text-align:center;font-weight:700}
+.maplink{font-size:.9em;margin:-4px 0 1.5em} .maplink a{text-decoration:none}
+.maplink a:hover{text-decoration:underline}
+.legend{color:#555;font-size:.86em;margin:-4px 0 .6em}
 .legend b{font-weight:600} .dot{display:inline-block;width:10px;height:10px;border-radius:50%;
 margin:0 4px 0 12px;vertical-align:baseline} .dot:first-child{margin-left:0}
 .leaflet-popup-content{font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif}
@@ -293,6 +297,48 @@ if (latlngs.length > 1) {
   overlays['Route order'] = route;
 }
 L.control.layers(null, overlays, {collapsed: false, position: 'topright'}).addTo(map);
+
+// Full-screen toggle using the browser's own Fullscreen API — no plugin, and it
+// degrades to simply not appearing if the browser won't allow it.
+var mapEl = document.getElementById('map');
+function fsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+if (mapEl.requestFullscreen || mapEl.webkitRequestFullscreen) {
+  var FullScreen = L.Control.extend({
+    options: {position: 'topleft'},
+    onAdd: function () {
+      var wrap = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+      var link = L.DomUtil.create('a', 'map-fs-btn', wrap);
+      link.href = '#';
+      link.title = 'Full screen';
+      link.setAttribute('role', 'button');
+      link.innerHTML = '\\u2922';
+      L.DomEvent.on(link, 'click', function (e) {
+        L.DomEvent.stop(e);
+        if (fsElement()) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else {
+          (mapEl.requestFullscreen || mapEl.webkitRequestFullscreen).call(mapEl);
+        }
+      });
+      return wrap;
+    }
+  });
+  map.addControl(new FullScreen());
+  // The container changes size on the way in and out, and Leaflet only finds out
+  // if we tell it. Re-fit so the whole route stays visible at the new size.
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      setTimeout(function () {
+        map.invalidateSize();
+        if (latlngs.length > 1) {
+          map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+        }
+      }, 150);
+    });
+  });
+}
 """
 
 # Display names for the map's layer toggle, in the order they appear in it.
@@ -303,6 +349,14 @@ KIND_LABELS = {"flight": "Flights", "stay": "Stays", "car": "Cars",
 def js_literal(value) -> str:
     """JSON for embedding in a <script> block, with the tag-break escaped."""
     return json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
+
+
+def leaflet_head() -> str:
+    """The Leaflet CSS and JS tags, pinned by hash."""
+    return (f'<link rel="stylesheet" href="{LEAFLET_CSS}" '
+            f'integrity="{LEAFLET_CSS_SRI}" crossorigin="">'
+            f'<script src="{LEAFLET_JS}" integrity="{LEAFLET_JS_SRI}" '
+            f'crossorigin=""></script>')
 
 
 def map_section(points: list[dict]) -> str:
@@ -322,6 +376,40 @@ def map_section(points: list[dict]) -> str:
             f'cars and activities.</div>\n'
             f'<script>{script}</script>')
 
+
+MAP_PAGE_CSS = """
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#1a1a1a}
+#map{position:absolute;inset:0;height:100%;width:100%;background:#e9edf1}
+.map-fs-btn{font-size:18px;line-height:26px;text-align:center;font-weight:700}
+.backbar{position:absolute;z-index:1000;top:10px;left:50%;transform:translateX(-50%);
+background:rgba(255,255,255,.94);border:1px solid #d9dde2;border-radius:999px;
+padding:6px 14px;font-size:.9em;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.backbar a{color:#0a58ca;text-decoration:none} .backbar a:hover{text-decoration:underline}
+.backbar b{font-weight:600}
+"""
+
+
+def map_page_html(data: dict, points: list[dict]) -> str:
+    """A whole page that is nothing but the map — what the 'new tab' link opens."""
+    t = data["trip"]
+    payload = [dict(lat=round(p["lat"], 6), lon=round(p["lon"], 6),
+                    kind=p["kind"], label=p["label"], detail=p["detail"])
+               for p in points]
+    script = (MAP_JS
+              .replace("__POINTS__", js_literal(payload))
+              .replace("__COLOURS__", js_literal(places_mod.KIND_COLOURS))
+              .replace("__LAYER_NAMES__", js_literal(KIND_LABELS)))
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{html.escape(t['name'])} — map</title><style>{MAP_PAGE_CSS}</style>{leaflet_head()}</head>
+<body>
+<div id="map"></div>
+<div class="backbar"><b>{html.escape(t['name'])}</b> &middot;
+<a href="{t['slug']}.html">back to the timeline</a></div>
+<script>{script}</script>
+</body></html>"""
+
 def fmt_when(e: dict) -> str:
     s, en = e["start"], e["end"]
     if s.date() == en.date():
@@ -340,22 +428,22 @@ def trip_html(data: dict, events: list[dict], points: list[dict] | None = None) 
             f'<div class="when">{html.escape(fmt_when(e))}</div>'
             f'<div class="det">{html.escape(e["desc"])}</div></div>')
     travellers = ", ".join(t.get("travellers", []))
-    leaflet_head = ""
+    head_extra = leaflet_head() if points else ""
+    map_link = ""
     if points:
-        leaflet_head = (
-            f'<link rel="stylesheet" href="{LEAFLET_CSS}" '
-            f'integrity="{LEAFLET_CSS_SRI}" crossorigin="">'
-            f'<script src="{LEAFLET_JS}" integrity="{LEAFLET_JS_SRI}" '
-            f'crossorigin=""></script>')
+        map_link = (f'<div class="maplink"><a href="{slug}-map.html" target="_blank" '
+                    f'rel="noopener">Open the map full screen in a new tab '
+                    f'&nearr;</a></div>')
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html.escape(t['name'])}</title><style>{PAGE_CSS}</style>{leaflet_head}</head>
+<title>{html.escape(t['name'])}</title><style>{PAGE_CSS}</style>{head_extra}</head>
 <body><div class="wrap">
 <p><a href="index.html">&larr; All trips</a></p>
 <h1>{html.escape(t['name'])}</h1>
 <div class="meta">{html.escape(str(t.get('start','')))} &ndash; {html.escape(str(t.get('end','')))}
 &middot; {html.escape(travellers)}</div>
 {map_section(points)}
+{map_link}
 <div class="sub">Subscribe in your phone's calendar (and share with your wife):
 <br><code>{slug}.ics</code> &mdash; add by URL so updates sync automatically.</div>
 {''.join(rows)}
@@ -407,6 +495,10 @@ def main():
             fh.write(trip_html(data, evs, pts))
         with open(os.path.join(DOCS_DIR, f"{slug}.ics"), "w", encoding="utf-8") as fh:
             fh.write(build_ics(evs, data["trip"]["name"]))
+        if pts:
+            with open(os.path.join(DOCS_DIR, f"{slug}-map.html"), "w",
+                      encoding="utf-8") as fh:
+                fh.write(map_page_html(data, pts))
         print(f"  {slug}: {len(evs)} events, {len(pts)} mapped")
 
     all_events.sort(key=lambda e: e["start"])

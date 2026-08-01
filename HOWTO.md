@@ -29,6 +29,7 @@ travel-tracker/
 ├── docs/                     generated output (this is what GitHub Pages publishes)
 │   ├── index.html             overview of all trips
 │   ├── <slug>.html            a timeline page per trip, with a map
+│   ├── <slug>-map.html        the same map, full page (the "new tab" link)
 │   ├── <slug>.ics             calendar feed per trip
 │   └── all.ics                every trip in one feed
 ├── apps-script/Code.gs       optional Gmail → Google Calendar automation
@@ -163,6 +164,15 @@ there, joined by a dashed route line. Blue markers are flights, green are stays,
 cars, purple are activities. Click a marker for the times, and use the box in the top-right
 corner to show or hide each category. It's generated from the same YAML as the timeline, so
 there's nothing extra to keep in sync.
+
+Two ways to get a bigger map:
+
+- **The ⤢ button** under the zoom controls fills the screen with the map, using the browser's
+  own full-screen mode. Press it again or hit `Esc` to come back. On a phone this is the one
+  you want.
+- **"Open the map full screen in a new tab"**, the link under the map, opens
+  `<slug>-map.html` — a page that is nothing but the map, with a link back to the timeline.
+  Handy for a second monitor, or for sending someone just the map.
 
 Coordinates live in `places.yaml` — airports by IATA code, everything else by name. After
 adding a trip, fill in the new places:
