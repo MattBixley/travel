@@ -107,9 +107,18 @@ cars:
 # ---- Activities ----
 activities:
   - confirmation:
-    name: Great Barrier Scorkling
-    vendor: someome
-    pickup:   { place: "Great Barrier Reef", tz: Australia/Brisbane, time: 2026-08-23 08:00 }
-    dropoff:   { place: "Great Barrier Reef", tz: Australia/Brisbane, time: 2026-08-23 16:00 }
-    booked_via: https://www.discovery-campervans.com.au
-    link: https://www.discovery-campervans.com.au
+    name: Great Barrier Snorkeling
+    vendor: Wavelength
+    pickup:   { place: "Port Douglas", tz: Australia/Brisbane, time: 2026-08-26 08:00 }
+    dropoff:   { place: "Port Douglas", tz: Australia/Brisbane, time: 2026-08-26 16:00 }
+    address: "Great Barrier Reef"
+    link: https://www.wavelength.com.au/
+
+  - confirmation:
+    name: Australasian Rogaining Chamionships
+    vendor: Queensland Rogaining Association
+    pickup:   { place: "Nundubbermere", tz: Australia/Brisbane, time: 2026-08-29 12:00 }
+    dropoff:   { place: "Nundubbermere", tz: Australia/Brisbane, time: 2026-08-30 12:00 }
+    address: "Nundubbermere, Queensland"
+    link: https://qldrogaine.asn.au/arc2026/
+

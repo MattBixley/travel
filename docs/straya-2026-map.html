@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Straya 2026 — map</title><style>
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#1a1a1a}
+#map{position:absolute;inset:0;height:100%;width:100%;background:#e9edf1}
+.map-fs-btn{font-size:18px;line-height:26px;text-align:center;font-weight:700}
+.backbar{position:absolute;z-index:1000;top:10px;left:50%;transform:translateX(-50%);
+background:rgba(255,255,255,.94);border:1px solid #d9dde2;border-radius:999px;
+padding:6px 14px;font-size:.9em;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.backbar a{color:#0a58ca;text-decoration:none} .backbar a:hover{text-decoration:underline}
+.backbar b{font-weight:600}
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script></head>
+<body>
+<div id="map"></div>
+<div class="backbar"><b>Straya 2026</b> &middot;
+<a href="straya-2026.html">back to the timeline</a></div>
+<script>
+var PTS = [{"lat": -43.488113, "lon": 172.542084, "kind": "stay", "label": "Novotel Christchurch Airport", "detail": "Check-in 2026-08-21 14:00 · check-out 2026-08-22 10:00"}, {"lat": -43.486271, "lon": 172.551803, "kind": "flight", "label": "Christchurch (CHC)", "detail": "Depart NZ205 — Sat 22 Aug, 06:00"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Arrive NZ205 — Sat 22 Aug, 08:05"}, {"lat": -16.917889, "lon": 145.773428, "kind": "stay", "label": "Ramada By Wyndham Cairns", "detail": "Check-in 2026-08-22 14:00 · check-out 2026-08-23 10:00"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Depart NZ2784 — Sat 22 Aug, 14:25"}, {"lat": -16.877981, "lon": 145.751628, "kind": "flight", "label": "Cairns (CNS)", "detail": "Arrive NZ2784 — Sat 22 Aug, 16:55"}, {"lat": -16.35, "lon": 145.9, "kind": "activity", "label": "Great Barrier Scorkling", "detail": "Sun 23 Aug, 08:00 · Great Barrier Reef"}, {"lat": -16.930173, "lon": 145.777246, "kind": "car", "label": "Star Motorhomes — 55 Dutton Street, Cairns", "detail": "Pickup Sun 23 Aug, 10:00 · Dropoff Thu 27 Aug, 15:00"}, {"lat": -16.095806, "lon": 145.464017, "kind": "stay", "label": "Cape Tribulation Camping", "detail": "Check-in 2026-08-23 14:00 · check-out 2026-08-25 10:00"}, {"lat": -16.877981, "lon": 145.751628, "kind": "flight", "label": "Cairns (CNS)", "detail": "Depart NZ2784 — Fri 28 Aug, 06:00"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Arrive NZ2784 — Fri 28 Aug, 08:15"}, {"lat": -27.387621, "lon": 153.121572, "kind": "car", "label": "Budget — Brisbane Airport, Terminal Building", "detail": "Pickup Fri 28 Aug, 09:00 · Dropoff Sun 30 Aug, 17:30"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Depart NZ204 — Sun 30 Aug, 19:10"}, {"lat": -43.486271, "lon": 172.551803, "kind": "flight", "label": "Christchurch (CHC)", "detail": "Arrive NZ204 — Mon 31 Aug, 00:40"}];
+var COLOURS = {"flight": "#0a58ca", "stay": "#1a9e6c", "car": "#d97706", "activity": "#7c3aed", "other": "#0891b2"};
+var LAYER_NAMES = {"flight": "Flights", "stay": "Stays", "car": "Cars", "activity": "Activities", "other": "Other"};
+var map = L.map('map', {scrollWheelZoom: false});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+var latlngs = PTS.map(function (p) { return [p.lat, p.lon]; });
+
+// Set the view BEFORE adding any vector layer. Leaflet's SVG renderer has no
+// bounds until the map has a centre and zoom, and adding a circleMarker first
+// throws "Cannot read properties of undefined (reading 'intersects')" — which
+// silently costs you every marker and the route line.
+if (latlngs.length === 1) {
+  map.setView(latlngs[0], 11);
+} else {
+  map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+}
+
+// One toggleable layer per kind, so flights/stays/cars/activities can be
+// switched on and off independently. The route line is its own layer.
+var groups = {};
+PTS.forEach(function (p, i) {
+  var g = groups[p.kind] || (groups[p.kind] = L.layerGroup());
+  L.circleMarker([p.lat, p.lon], {
+    radius: 7, color: '#fff', weight: 2,
+    fillColor: COLOURS[p.kind] || '#666', fillOpacity: 1
+  }).bindPopup('<b>' + (i + 1) + '. ' + p.label + '</b>' + p.detail).addTo(g);
+});
+
+var overlays = {};
+Object.keys(LAYER_NAMES).forEach(function (kind) {
+  if (!groups[kind]) return;
+  groups[kind].addTo(map);
+  var swatch = '<span class="dot" style="background:' + (COLOURS[kind] || '#666') + '"></span>';
+  overlays[swatch + LAYER_NAMES[kind]] = groups[kind];
+});
+if (latlngs.length > 1) {
+  var route = L.polyline(latlngs, {
+    color: '#555', weight: 2, opacity: 0.55, dashArray: '5,6'
+  }).addTo(map);
+  overlays['Route order'] = route;
+}
+L.control.layers(null, overlays, {collapsed: false, position: 'topright'}).addTo(map);
+
+// Full-screen toggle using the browser's own Fullscreen API — no plugin, and it
+// degrades to simply not appearing if the browser won't allow it.
+var mapEl = document.getElementById('map');
+function fsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+if (mapEl.requestFullscreen || mapEl.webkitRequestFullscreen) {
+  var FullScreen = L.Control.extend({
+    options: {position: 'topleft'},
+    onAdd: function () {
+      var wrap = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+      var link = L.DomUtil.create('a', 'map-fs-btn', wrap);
+      link.href = '#';
+      link.title = 'Full screen';
+      link.setAttribute('role', 'button');
+      link.innerHTML = '\u2922';
+      L.DomEvent.on(link, 'click', function (e) {
+        L.DomEvent.stop(e);
+        if (fsElement()) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else {
+          (mapEl.requestFullscreen || mapEl.webkitRequestFullscreen).call(mapEl);
+        }
+      });
+      return wrap;
+    }
+  });
+  map.addControl(new FullScreen());
+  // The container changes size on the way in and out, and Leaflet only finds out
+  // if we tell it. Re-fit so the whole route stays visible at the new size.
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      setTimeout(function () {
+        map.invalidateSize();
+        if (latlngs.length > 1) {
+          map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+        }
+      }, 150);
+    });
+  });
+}
+</script>
+</body></html>

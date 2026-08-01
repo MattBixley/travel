@@ -1,36 +1,20 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EXAMPLE — Japan 2026 (fake data, delete me)</title><style>
-*{box-sizing:border-box} body{font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;
-margin:0;color:#1a1a1a;background:#f6f7f9} .wrap{max-width:760px;margin:0 auto;padding:24px}
-h1{margin:.2em 0} a{color:#0a58ca} .meta{color:#666;margin-bottom:1.5em}
-.ev{background:#fff;border:1px solid #e3e6ea;border-radius:12px;padding:14px 16px;margin:10px 0;
-border-left:5px solid #999} .ev.flight{border-left-color:#0a58ca}
-.ev.stay{border-left-color:#1a9e6c} .ev.car{border-left-color:#d97706}
-.ev.activity{border-left-color:#7c3aed} .ev.other{border-left-color:#0891b2}
-.ev h3{margin:0 0 4px} .ev .when{color:#444;font-size:.92em} .ev .det{color:#555;
-font-size:.9em;white-space:pre-line;margin-top:6px} .sub{margin:1em 0;padding:12px 16px;
-background:#eef3ff;border-radius:10px;font-size:.92em} .card{display:block;background:#fff;
-border:1px solid #e3e6ea;border-radius:12px;padding:16px;margin:10px 0;text-decoration:none;color:inherit}
-.card:hover{border-color:#0a58ca}
-#map{height:360px;border:1px solid #e3e6ea;border-radius:12px;margin:1em 0;background:#e9edf1}
-#map:fullscreen,#map:-webkit-full-screen{height:100%;width:100%;border:0;border-radius:0}
+<title>EXAMPLE — Japan 2026 (fake data, delete me) — map</title><style>
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#1a1a1a}
+#map{position:absolute;inset:0;height:100%;width:100%;background:#e9edf1}
 .map-fs-btn{font-size:18px;line-height:26px;text-align:center;font-weight:700}
-.maplink{font-size:.9em;margin:-4px 0 1.5em} .maplink a{text-decoration:none}
-.maplink a:hover{text-decoration:underline}
-.legend{color:#555;font-size:.86em;margin:-4px 0 .6em}
-.legend b{font-weight:600} .dot{display:inline-block;width:10px;height:10px;border-radius:50%;
-margin:0 4px 0 12px;vertical-align:baseline} .dot:first-child{margin-left:0}
-.leaflet-popup-content{font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif}
-.leaflet-popup-content b{display:block;margin-bottom:2px}
+.backbar{position:absolute;z-index:1000;top:10px;left:50%;transform:translateX(-50%);
+background:rgba(255,255,255,.94);border:1px solid #d9dde2;border-radius:999px;
+padding:6px 14px;font-size:.9em;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.backbar a{color:#0a58ca;text-decoration:none} .backbar a:hover{text-decoration:underline}
+.backbar b{font-weight:600}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script></head>
-<body><div class="wrap">
-<p><a href="index.html">&larr; All trips</a></p>
-<h1>EXAMPLE — Japan 2026 (fake data, delete me)</h1>
-<div class="meta">2026-09-12 &ndash; 2026-09-26
-&middot; Example traveller 1, Example traveller 2</div>
+<body>
 <div id="map"></div>
-<div class="legend"><b>Route in order</b> — numbered markers follow the timeline below. Use the box on the map to show or hide flights, stays, cars and activities.</div>
+<div class="backbar"><b>EXAMPLE — Japan 2026 (fake data, delete me)</b> &middot;
+<a href="example-japan.html">back to the timeline</a></div>
 <script>
 var PTS = [{"lat": -37.006551, "lon": 174.790336, "kind": "flight", "label": "Auckland (AKL)", "detail": "Depart NZ99 — Sat 12 Sep, 09:25"}, {"lat": 35.696575, "lon": 139.705685, "kind": "stay", "label": "Shinjuku Granbell Hotel", "detail": "Check-in 2026-09-12 15:00 · check-out 2026-09-18 11:00"}, {"lat": 35.545692, "lon": 139.776099, "kind": "flight", "label": "Tokyo (HND)", "detail": "Arrive NZ99 — Sat 12 Sep, 17:05"}, {"lat": 35.696173, "lon": 139.570632, "kind": "activity", "label": "Ghibli Museum", "detail": "Mon 14 Sep, 10:00 · Ghibli Museum, Mitaka"}, {"lat": 34.998, "lon": 135.7788, "kind": "stay", "label": "Kyoto Machiya Ryokan", "detail": "Check-in 2026-09-18 16:00 · check-out 2026-09-24 10:00"}, {"lat": 34.986693, "lon": 135.758359, "kind": "car", "label": "Nippon Rent-A-Car — Kyoto Station", "detail": "Pickup Sat 19 Sep, 09:00 · Dropoff Mon 21 Sep, 18:00"}, {"lat": 34.967519, "lon": 135.77971, "kind": "activity", "label": "Fushimi Inari early walk", "detail": "Sun 20 Sep, 06:30 · Fushimi Inari Taisha"}, {"lat": 35.545692, "lon": 139.776099, "kind": "flight", "label": "Tokyo (HND)", "detail": "Depart NZ90 — Sat 26 Sep, 22:30"}, {"lat": -37.006551, "lon": 174.790336, "kind": "flight", "label": "Auckland (AKL)", "detail": "Arrive NZ90 — Sun 27 Sep, 12:40"}];
 var COLOURS = {"flight": "#0a58ca", "stay": "#1a9e6c", "car": "#d97706", "activity": "#7c3aed", "other": "#0891b2"};
@@ -120,44 +104,4 @@ if (mapEl.requestFullscreen || mapEl.webkitRequestFullscreen) {
   });
 }
 </script>
-<div class="maplink"><a href="example-japan-map.html" target="_blank" rel="noopener">Open the map full screen in a new tab &nearr;</a></div>
-<div class="sub">Subscribe in your phone's calendar (and share with your wife):
-<br><code>example-japan.ics</code> &mdash; add by URL so updates sync automatically.</div>
-<div class="ev flight"><h3>✈ NZ99 AKL→HND</h3><div class="when">Sat 12 Sep 2026, 09:25 – 17:05</div><div class="det">Air New Zealand NZ99
-Auckland (AKL) -&gt; Tokyo (HND)
-Seat: 42K
-Confirmation: NZ-ABC123
-Booked via: Air New Zealand app
-https://www.airnewzealand.co.nz/manage-booking</div></div><div class="ev stay"><h3>🏨 Shinjuku Granbell Hotel</h3><div class="when">Sat 12 Sep 2026, 15:00 → Fri 18 Sep 2026, 11:00</div><div class="det">Shinjuku Granbell Hotel, Tokyo
-2-14-5 Kabukicho, Shinjuku, Tokyo
-Check-in 2026-09-12 15:00 / Check-out 2026-09-18 11:00
-Confirmation: BDC-998877
-Booked via: Booking.com
-https://www.booking.com/mytrips</div></div><div class="ev activity"><h3>🎟 Ghibli Museum</h3><div class="when">Mon 14 Sep 2026, 10:00 – 12:00</div><div class="det">Ghibli Museum
-Ghibli Museum, Mitaka
-Confirmation: GHIB-4471
-Booked via: Lawson Ticket
-Timed entry — printed ticket required, no entry if late.
-</div></div><div class="ev stay"><h3>🏨 Kyoto Machiya Ryokan</h3><div class="when">Fri 18 Sep 2026, 16:00 → Thu 24 Sep 2026, 10:00</div><div class="det">Kyoto Machiya Ryokan, Kyoto
-Higashiyama Ward, Kyoto
-Check-in 2026-09-18 16:00 / Check-out 2026-09-24 10:00
-Confirmation: EXP-554433
-Booked via: Expedia
-https://www.expedia.com/trips</div></div><div class="ev car"><h3>🚗 Nippon Rent-A-Car (Compact car)</h3><div class="when">Sat 19 Sep 2026, 09:00 → Mon 21 Sep 2026, 18:00</div><div class="det">Nippon Rent-A-Car - Compact car
-Pickup: Kyoto Station 2026-09-19 09:00
-Dropoff: Kyoto Station 2026-09-21 18:00
-Confirmation: RENT-112233
-Booked via: Expedia
-https://www.expedia.com/trips</div></div><div class="ev activity"><h3>🎟 Fushimi Inari early walk</h3><div class="when">Sun 20 Sep 2026, 06:30 – 07:30</div><div class="det">Fushimi Inari early walk
-Fushimi Inari Taisha
-Confirmation: -
-Booked via: -
-No booking needed. Go at dawn to beat the crowds.
-</div></div><div class="ev flight"><h3>✈ NZ90 HND→AKL</h3><div class="when">Sat 26 Sep 2026, 22:30 → Sun 27 Sep 2026, 12:40</div><div class="det">Air New Zealand NZ90
-Tokyo (HND) -&gt; Auckland (AKL)
-Seat: 42K
-Confirmation: NZ-ABC123
-Booked via: Air New Zealand app
-https://www.airnewzealand.co.nz/manage-booking</div></div>
-<p class="meta">This is sample data only — not a real reservation.</p>
-</div></body></html>
+</body></html>

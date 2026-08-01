@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EXAMPLE — Japan 2026 (fake data, delete me)</title><style>
+<title>Straya 2026</title><style>
 *{box-sizing:border-box} body{font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;
 margin:0;color:#1a1a1a;background:#f6f7f9} .wrap{max-width:760px;margin:0 auto;padding:24px}
 h1{margin:.2em 0} a{color:#0a58ca} .meta{color:#666;margin-bottom:1.5em}
@@ -26,13 +26,13 @@ margin:0 4px 0 12px;vertical-align:baseline} .dot:first-child{margin-left:0}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script></head>
 <body><div class="wrap">
 <p><a href="index.html">&larr; All trips</a></p>
-<h1>EXAMPLE — Japan 2026 (fake data, delete me)</h1>
-<div class="meta">2026-09-12 &ndash; 2026-09-26
-&middot; Example traveller 1, Example traveller 2</div>
+<h1>Straya 2026</h1>
+<div class="meta">2026-08-22 &ndash; 2026-08-30
+&middot; Annie, Matt</div>
 <div id="map"></div>
 <div class="legend"><b>Route in order</b> — numbered markers follow the timeline below. Use the box on the map to show or hide flights, stays, cars and activities.</div>
 <script>
-var PTS = [{"lat": -37.006551, "lon": 174.790336, "kind": "flight", "label": "Auckland (AKL)", "detail": "Depart NZ99 — Sat 12 Sep, 09:25"}, {"lat": 35.696575, "lon": 139.705685, "kind": "stay", "label": "Shinjuku Granbell Hotel", "detail": "Check-in 2026-09-12 15:00 · check-out 2026-09-18 11:00"}, {"lat": 35.545692, "lon": 139.776099, "kind": "flight", "label": "Tokyo (HND)", "detail": "Arrive NZ99 — Sat 12 Sep, 17:05"}, {"lat": 35.696173, "lon": 139.570632, "kind": "activity", "label": "Ghibli Museum", "detail": "Mon 14 Sep, 10:00 · Ghibli Museum, Mitaka"}, {"lat": 34.998, "lon": 135.7788, "kind": "stay", "label": "Kyoto Machiya Ryokan", "detail": "Check-in 2026-09-18 16:00 · check-out 2026-09-24 10:00"}, {"lat": 34.986693, "lon": 135.758359, "kind": "car", "label": "Nippon Rent-A-Car — Kyoto Station", "detail": "Pickup Sat 19 Sep, 09:00 · Dropoff Mon 21 Sep, 18:00"}, {"lat": 34.967519, "lon": 135.77971, "kind": "activity", "label": "Fushimi Inari early walk", "detail": "Sun 20 Sep, 06:30 · Fushimi Inari Taisha"}, {"lat": 35.545692, "lon": 139.776099, "kind": "flight", "label": "Tokyo (HND)", "detail": "Depart NZ90 — Sat 26 Sep, 22:30"}, {"lat": -37.006551, "lon": 174.790336, "kind": "flight", "label": "Auckland (AKL)", "detail": "Arrive NZ90 — Sun 27 Sep, 12:40"}];
+var PTS = [{"lat": -43.488113, "lon": 172.542084, "kind": "stay", "label": "Novotel Christchurch Airport", "detail": "Check-in 2026-08-21 14:00 · check-out 2026-08-22 10:00"}, {"lat": -43.486271, "lon": 172.551803, "kind": "flight", "label": "Christchurch (CHC)", "detail": "Depart NZ205 — Sat 22 Aug, 06:00"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Arrive NZ205 — Sat 22 Aug, 08:05"}, {"lat": -16.917889, "lon": 145.773428, "kind": "stay", "label": "Ramada By Wyndham Cairns", "detail": "Check-in 2026-08-22 14:00 · check-out 2026-08-23 10:00"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Depart NZ2784 — Sat 22 Aug, 14:25"}, {"lat": -16.877981, "lon": 145.751628, "kind": "flight", "label": "Cairns (CNS)", "detail": "Arrive NZ2784 — Sat 22 Aug, 16:55"}, {"lat": -16.35, "lon": 145.9, "kind": "activity", "label": "Great Barrier Scorkling", "detail": "Sun 23 Aug, 08:00 · Great Barrier Reef"}, {"lat": -16.930173, "lon": 145.777246, "kind": "car", "label": "Star Motorhomes — 55 Dutton Street, Cairns", "detail": "Pickup Sun 23 Aug, 10:00 · Dropoff Thu 27 Aug, 15:00"}, {"lat": -16.095806, "lon": 145.464017, "kind": "stay", "label": "Cape Tribulation Camping", "detail": "Check-in 2026-08-23 14:00 · check-out 2026-08-25 10:00"}, {"lat": -16.877981, "lon": 145.751628, "kind": "flight", "label": "Cairns (CNS)", "detail": "Depart NZ2784 — Fri 28 Aug, 06:00"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Arrive NZ2784 — Fri 28 Aug, 08:15"}, {"lat": -27.387621, "lon": 153.121572, "kind": "car", "label": "Budget — Brisbane Airport, Terminal Building", "detail": "Pickup Fri 28 Aug, 09:00 · Dropoff Sun 30 Aug, 17:30"}, {"lat": -27.387621, "lon": 153.121572, "kind": "flight", "label": "Brisbane (BNE)", "detail": "Depart NZ204 — Sun 30 Aug, 19:10"}, {"lat": -43.486271, "lon": 172.551803, "kind": "flight", "label": "Christchurch (CHC)", "detail": "Arrive NZ204 — Mon 31 Aug, 00:40"}];
 var COLOURS = {"flight": "#0a58ca", "stay": "#1a9e6c", "car": "#d97706", "activity": "#7c3aed", "other": "#0891b2"};
 var LAYER_NAMES = {"flight": "Flights", "stay": "Stays", "car": "Cars", "activity": "Activities", "other": "Other"};
 var map = L.map('map', {scrollWheelZoom: false});
@@ -120,44 +120,59 @@ if (mapEl.requestFullscreen || mapEl.webkitRequestFullscreen) {
   });
 }
 </script>
-<div class="maplink"><a href="example-japan-map.html" target="_blank" rel="noopener">Open the map full screen in a new tab &nearr;</a></div>
+<div class="maplink"><a href="straya-2026-map.html" target="_blank" rel="noopener">Open the map full screen in a new tab &nearr;</a></div>
 <div class="sub">Subscribe in your phone's calendar (and share with your wife):
-<br><code>example-japan.ics</code> &mdash; add by URL so updates sync automatically.</div>
-<div class="ev flight"><h3>✈ NZ99 AKL→HND</h3><div class="when">Sat 12 Sep 2026, 09:25 – 17:05</div><div class="det">Air New Zealand NZ99
-Auckland (AKL) -&gt; Tokyo (HND)
-Seat: 42K
-Confirmation: NZ-ABC123
-Booked via: Air New Zealand app
-https://www.airnewzealand.co.nz/manage-booking</div></div><div class="ev stay"><h3>🏨 Shinjuku Granbell Hotel</h3><div class="when">Sat 12 Sep 2026, 15:00 → Fri 18 Sep 2026, 11:00</div><div class="det">Shinjuku Granbell Hotel, Tokyo
-2-14-5 Kabukicho, Shinjuku, Tokyo
-Check-in 2026-09-12 15:00 / Check-out 2026-09-18 11:00
-Confirmation: BDC-998877
-Booked via: Booking.com
-https://www.booking.com/mytrips</div></div><div class="ev activity"><h3>🎟 Ghibli Museum</h3><div class="when">Mon 14 Sep 2026, 10:00 – 12:00</div><div class="det">Ghibli Museum
-Ghibli Museum, Mitaka
-Confirmation: GHIB-4471
-Booked via: Lawson Ticket
-Timed entry — printed ticket required, no entry if late.
-</div></div><div class="ev stay"><h3>🏨 Kyoto Machiya Ryokan</h3><div class="when">Fri 18 Sep 2026, 16:00 → Thu 24 Sep 2026, 10:00</div><div class="det">Kyoto Machiya Ryokan, Kyoto
-Higashiyama Ward, Kyoto
-Check-in 2026-09-18 16:00 / Check-out 2026-09-24 10:00
-Confirmation: EXP-554433
-Booked via: Expedia
-https://www.expedia.com/trips</div></div><div class="ev car"><h3>🚗 Nippon Rent-A-Car (Compact car)</h3><div class="when">Sat 19 Sep 2026, 09:00 → Mon 21 Sep 2026, 18:00</div><div class="det">Nippon Rent-A-Car - Compact car
-Pickup: Kyoto Station 2026-09-19 09:00
-Dropoff: Kyoto Station 2026-09-21 18:00
-Confirmation: RENT-112233
-Booked via: Expedia
-https://www.expedia.com/trips</div></div><div class="ev activity"><h3>🎟 Fushimi Inari early walk</h3><div class="when">Sun 20 Sep 2026, 06:30 – 07:30</div><div class="det">Fushimi Inari early walk
-Fushimi Inari Taisha
+<br><code>straya-2026.ics</code> &mdash; add by URL so updates sync automatically.</div>
+<div class="ev stay"><h3>🏨 Novotel Christchurch Airport</h3><div class="when">Fri 21 Aug 2026, 14:00 → Sat 22 Aug 2026, 10:00</div><div class="det">Novotel Christchurch Airport, Christchurch
+Christchurch Airport
+Check-in 2026-08-21 14:00 / Check-out 2026-08-22 10:00
+Confirmation: 5693693324
+Booked via: booking.com
+</div></div><div class="ev flight"><h3>✈ NZ205 CHC→BNE</h3><div class="when">Sat 22 Aug 2026, 06:00 – 08:05</div><div class="det">Air New Zealand NZ205
+Christchurch (CHC) -&gt; Brisbane (BNE)
+Seat: 3E, 3F
+Confirmation: 5RETSH
+Booked via: Air New Zealand
+https://www.airnewzealand.co.nz/identity/my-bookings</div></div><div class="ev stay"><h3>🏨 Ramada By Wyndham Cairns</h3><div class="when">Sat 22 Aug 2026, 14:00 → Sun 23 Aug 2026, 10:00</div><div class="det">Ramada By Wyndham Cairns, Cairns
+Cnr Abbott And Florence Street, Cairns, QLD, 4870 Australia
+Check-in 2026-08-22 14:00 / Check-out 2026-08-23 10:00
+Confirmation: 73460167741238
+Booked via: Air New Zealand
+https://www.airnewzealand.co.nz/identity/my-bookings</div></div><div class="ev flight"><h3>✈ NZ2784 BNE→CNS</h3><div class="when">Sat 22 Aug 2026, 14:25 – 16:55</div><div class="det">Qantas/Alliance Airlines NZ2784
+Brisbane (BNE) -&gt; Cairns (CNS)
+Seat: ??
+Confirmation: 5RETSH/D5PPD4
+Booked via: Air New Zealand
+https://www.airnewzealand.co.nz/identity/my-bookings</div></div><div class="ev activity"><h3>🎟 Great Barrier Scorkling</h3><div class="when">Sun 23 Aug 2026, 08:00 – 16:00</div><div class="det">Great Barrier Scorkling
+Great Barrier Reef
 Confirmation: -
-Booked via: -
-No booking needed. Go at dawn to beat the crowds.
-</div></div><div class="ev flight"><h3>✈ NZ90 HND→AKL</h3><div class="when">Sat 26 Sep 2026, 22:30 → Sun 27 Sep 2026, 12:40</div><div class="det">Air New Zealand NZ90
-Tokyo (HND) -&gt; Auckland (AKL)
-Seat: 42K
-Confirmation: NZ-ABC123
-Booked via: Air New Zealand app
-https://www.airnewzealand.co.nz/manage-booking</div></div>
-<p class="meta">This is sample data only — not a real reservation.</p>
+Booked via: https://www.discovery-campervans.com.au
+
+https://www.discovery-campervans.com.au</div></div><div class="ev car"><h3>🚗 Star Motorhomes (Star Polaris 2)</h3><div class="when">Sun 23 Aug 2026, 10:00 → Thu 27 Aug 2026, 15:00</div><div class="det">Star Motorhomes - Star Polaris 2
+Pickup: 55 Dutton Street, Cairns 2026-08-23 10:00
+Dropoff: 55 Dutton Street, Cairns 2026-08-27 15:00
+Confirmation: 2285237
+Booked via: https://www.discovery-campervans.com.au
+https://www.discovery-campervans.com.au</div></div><div class="ev stay"><h3>🏨 Cape Tribulation Camping</h3><div class="when">Sun 23 Aug 2026, 14:00 → Tue 25 Aug 2026, 10:00</div><div class="det">Cape Tribulation Camping, Cape Tribulation
+3812 Cape Tribulation Road, Cape Tribulation, Queensland 4873 Australia
+Check-in 2026-08-23 14:00 / Check-out 2026-08-25 10:00
+Confirmation: 20445 Matt Bixley
+Booked via: www.capetribcamping.com.au
+www.capetribcamping.com.au</div></div><div class="ev flight"><h3>✈ NZ2784 CNS→BNE</h3><div class="when">Fri 28 Aug 2026, 06:00 – 08:15</div><div class="det">Qantas/Alliance Airlines NZ2784
+Cairns (CNS) -&gt; Brisbane (BNE)
+Seat: ??
+Confirmation: 5RETSH/D5PPD4
+Booked via: Air New Zealand
+https://www.airnewzealand.co.nz/identity/my-bookings</div></div><div class="ev car"><h3>🚗 Budget (Kia Sportage or Similar)</h3><div class="when">Fri 28 Aug 2026, 09:00 → Sun 30 Aug 2026, 17:30</div><div class="det">Budget - Kia Sportage or Similar
+Pickup: Brisbane Airport, Terminal Building 2026-08-28 09:00
+Dropoff: Brisbane Airport, Terminal Building 2026-08-30 17:30
+Confirmation: 46661011NZ5
+Booked via: Air New Zealand
+https://www.airnewzealand.co.nz/identity/my-bookings</div></div><div class="ev flight"><h3>✈ NZ204 BNE→CHC</h3><div class="when">Sun 30 Aug 2026, 19:10 → Mon 31 Aug 2026, 00:40</div><div class="det">Air New Zealand NZ204
+Brisbane (BNE) -&gt; Christchurch (CHC)
+Seat: 5A, 5B
+Confirmation: 5RETSH
+Booked via: Air New Zealand
+https://www.airnewzealand.co.nz/identity/my-bookings</div></div>
+<p class="meta">Australasian Rogaine Champs 2026</p>
 </div></body></html>
