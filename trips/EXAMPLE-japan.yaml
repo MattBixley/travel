@@ -65,6 +65,27 @@ stays:
     booked_via: Expedia
     link: https://www.expedia.com/trips
 
+# ---- Activities ----
+# Anything with a time and a place: tours, tickets, races, dinners, meetings.
+# `end` is optional — leave it out and the event gets an hour.
+activities:
+  - name: Ghibli Museum
+    place: Ghibli Museum, Mitaka
+    city: Tokyo
+    tz: Asia/Tokyo
+    start: 2026-09-14 10:00
+    end: 2026-09-14 12:00
+    confirmation: GHIB-4471
+    booked_via: Lawson Ticket
+    notes: Timed entry — printed ticket required, no entry if late.
+
+  - name: Fushimi Inari early walk
+    place: Fushimi Inari Taisha
+    city: Kyoto
+    tz: Asia/Tokyo
+    start: 2026-09-20 06:30
+    notes: No booking needed. Go at dawn to beat the crowds.
+
 # ---- Cars / campervans ----
 cars:
   - confirmation: RENT-112233

@@ -95,6 +95,32 @@ def check_data(data, errors):
             if t is not None:
                 check_time(t, f"{w}.{field}", errors)
 
+    for i, raw in enumerate(data.get("activities") or [], 1):
+        w = f"activities[{i}]"
+        get(raw, "name", w, errors)
+        # Two shapes are allowed: start/end/tz, or pickup/dropoff like `cars`.
+        try:
+            import places
+            a = places.normalise_activity(raw)
+        except Exception:
+            a = raw
+        if not isinstance(a, dict):
+            continue
+        if a.get("start") is None:
+            errors.append(f"{w}: needs either `start:` or a `pickup:` block")
+        else:
+            check_time(a["start"], f"{w}.start", errors)
+        if a.get("start_tz") is None:
+            errors.append(f"{w}: missing a timezone — either `tz:` on the activity "
+                          f"or `tz:` inside `pickup:`")
+        else:
+            check_tz(a["start_tz"], w, errors)
+        # `end` is optional; generate.py gives it an hour if it's absent.
+        if a.get("end") is not None:
+            check_time(a["end"], f"{w}.end", errors)
+            if a.get("end_tz") is not None:
+                check_tz(a["end_tz"], f"{w} (end)", errors)
+
     for i, c in enumerate(data.get("cars") or [], 1):
         w = f"cars[{i}]"
         for end in ("pickup", "dropoff"):

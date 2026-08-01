@@ -58,8 +58,8 @@ cp trips/EXAMPLE-japan.yaml trips/2026-fiji.yaml
 (Or just duplicate the file in VS Code's Explorer and rename it.)
 
 ### Step 2 — fill it in
-Open the new file and edit it. The structure has four parts — `trip`, `flights`, `stays`,
-`cars` — and any part can be left out if you don't have it.
+Open the new file and edit it. The structure has five parts — `trip`, `flights`, `stays`,
+`cars`, `activities` — and any part can be left out if you don't have it.
 
 ```yaml
 trip:
@@ -101,6 +101,28 @@ cars:
     dropoff: { place: Nadi Airport, tz: Pacific/Fiji, time: 2026-07-10 09:00 }
     booked_via: Entero
     link: https://...
+
+activities:
+  - name: Sunset reef cruise
+    place: Port Denarau Marina
+    city: Denarau
+    tz: Pacific/Fiji
+    start: 2026-07-03 16:30
+    end: 2026-07-03 19:00       # optional — leave it out and you get an hour
+    confirmation: ACT-REAL321
+    booked_via: Viator
+    notes: Check in 30 min early at the kiosk.
+```
+
+`activities` covers anything with a time and a place: tours, tickets, races, dinners,
+meetings. It also accepts the same `pickup:`/`dropoff:` shape as `cars`, if that's more
+natural for a full-day trip:
+
+```yaml
+activities:
+  - name: Great Barrier Reef snorkelling
+    pickup:  { place: Reef Fleet Terminal, tz: Australia/Brisbane, time: 2026-08-23 08:00 }
+    dropoff: { place: Reef Fleet Terminal, tz: Australia/Brisbane, time: 2026-08-23 16:00 }
 ```
 
 **Three rules that matter:**
@@ -114,8 +136,8 @@ cars:
 - **`confirmation`, `seat`, `address`, `link`, `notes` are optional** but they appear in the
   calendar event details, which is handy at the airport or check-in desk.
 
-To add a second flight leg, hotel, or car, just add another `-` item under that heading.
-A campervan goes under `cars` (set `type:` to e.g. `4-berth campervan`).
+To add a second flight leg, hotel, car, or activity, just add another `-` item under that
+heading. A campervan goes under `cars` (set `type:` to e.g. `4-berth campervan`).
 
 ### Step 3 — publish
 ```bash
@@ -138,7 +160,8 @@ Then open `docs/index.html` in a browser. Useful if you want to check it before 
 
 Every trip page opens with a map: one numbered marker per location, in the order you get
 there, joined by a dashed route line. Blue markers are flights, green are stays, orange are
-cars. Click a marker for the times. It's generated from the same YAML as the timeline, so
+cars, purple are activities. Click a marker for the times, and use the box in the top-right
+corner to show or hide each category. It's generated from the same YAML as the timeline, so
 there's nothing extra to keep in sync.
 
 Coordinates live in `places.yaml` — airports by IATA code, everything else by name. After
@@ -314,7 +337,8 @@ The remote has a commit you don't (e.g. a README created on GitHub).
 | I want to… | Do this |
 |---|---|
 | Add a trip | `cp trips/EXAMPLE-japan.yaml trips/<name>.yaml`, edit, commit, push |
-| Add a flight / hotel / car | Add a `-` item under `flights` / `stays` / `cars` |
+| Add a flight / hotel / car / activity | Add a `-` item under `flights` / `stays` / `cars` / `activities` |
+| Add a tour, race or dinner | Add under `activities` with `name`, `place`, `tz`, `start` |
 | Add a campervan | Add under `cars` with `type: ... campervan` |
 | Publish changes | `git push` — the Action rebuilds the site |
 | Add map pins for a new trip | `python scripts/geocode.py`, then commit `places.yaml` |

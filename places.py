@@ -23,7 +23,8 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 PLACES_FILE = os.path.join(ROOT, "places.yaml")
 
 # Marker colours, matching the timeline's left borders in PAGE_CSS.
-KIND_COLOURS = {"flight": "#0a58ca", "stay": "#1a9e6c", "car": "#d97706"}
+KIND_COLOURS = {"flight": "#0a58ca", "stay": "#1a9e6c",
+                "car": "#d97706", "activity": "#7c3aed"}
 
 
 def norm(s) -> str:
@@ -147,6 +148,60 @@ def car_queries(leg: dict, car: dict) -> list[str]:
     return [q for i, q in enumerate(out) if q not in out[:i]]
 
 
+def normalise_activity(act: dict) -> dict:
+    """Flatten either shape of activity entry into one form.
+
+    Two spellings are accepted, because both are natural to write:
+
+        start: 2026-08-23 08:00        # simple form
+        end:   2026-08-23 16:00
+        place: Great Barrier Reef
+        tz:    Australia/Brisbane
+
+        pickup:  { place: ..., tz: ..., time: ... }    # same shape as `cars`
+        dropoff: { place: ..., tz: ..., time: ... }
+
+    Returns a dict with start/end/start_tz/end_tz/place plus the original's other
+    keys. `end` may be None, which generate.py turns into an hour.
+    """
+    out = dict(act)
+    pickup, dropoff = act.get("pickup"), act.get("dropoff")
+    if isinstance(pickup, dict):
+        out.setdefault("place", pickup.get("place"))
+        out["start"] = pickup.get("time", act.get("start"))
+        out["start_tz"] = pickup.get("tz", act.get("tz"))
+        if isinstance(dropoff, dict):
+            out["end"] = dropoff.get("time")
+            out["end_tz"] = dropoff.get("tz", out["start_tz"])
+            out.setdefault("place", dropoff.get("place"))
+        else:
+            out["end"] = act.get("end")
+            out["end_tz"] = out["start_tz"]
+    else:
+        out["start_tz"] = act.get("tz")
+        out["end_tz"] = act.get("tz")
+    return out
+
+
+def activity_queries(act: dict) -> list[str]:
+    """Names worth trying for an activity, most specific first."""
+    act = normalise_activity(act)
+    name, place = act.get("name"), act.get("place")
+    addr, city = act.get("address"), act.get("city")
+    out = []
+    if place and city:
+        out.append(f"{place}, {city}")
+    if place:
+        out.append(str(place))
+    if addr:
+        out.append(str(addr))
+    if name and city:
+        out.append(f"{name}, {city}")
+    if city:
+        out.append(str(city))
+    return [q for i, q in enumerate(out) if q not in out[:i]]
+
+
 def resolve_side(side: dict, places: dict):
     """Coordinates for one end of a flight: explicit coords, then airport code, then name."""
     ll = as_latlon(side.get("coords"))
@@ -222,6 +277,21 @@ def trip_points(data: dict, places: dict) -> tuple[list[dict], list[str]]:
                 label=f"{c.get('vendor', 'Car')} — {leg.get('place', '')}",
                 detail=f"{end.title()} {when.strftime('%a %d %b, %H:%M')}"))
 
+    for raw in data.get("activities") or []:
+        a = normalise_activity(raw)
+        st = parse_local(a["start"], a["start_tz"])
+        ll = as_latlon(a.get("coords")) or _lookup(places, activity_queries(raw))
+        if not ll:
+            qs = activity_queries(raw)
+            misses.append(qs[0] if qs else "?")
+            continue
+        detail = st.strftime("%a %d %b, %H:%M")
+        if a.get("place"):
+            detail += f" · {a['place']}"
+        points.append(dict(
+            lat=ll[0], lon=ll[1], kind="activity", when=st,
+            label=str(a.get("name", "Activity")), detail=detail))
+
     points.sort(key=lambda p: p["when"])
     # Preserve order but drop duplicate miss queries.
     seen_miss, unique = set(), []
@@ -247,4 +317,7 @@ def all_queries(data: dict) -> list[str]:
         for end in ("pickup", "dropoff"):
             if not as_latlon(c[end].get("coords")):
                 out.append((None, car_queries(c[end], c)))
+    for a in data.get("activities") or []:
+        if not as_latlon(a.get("coords")):
+            out.append((None, activity_queries(a)))
     return out
