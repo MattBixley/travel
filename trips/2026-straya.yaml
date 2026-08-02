@@ -109,13 +109,13 @@ activities:
   - confirmation:
     name: Great Barrier Snorkeling
     vendor: Wavelength
-    pickup:   { place: "Port Douglas", tz: Australia/Brisbane, time: 2026-08-26 08:00 }
+    pickup:   { place: "Port Douglas", tz: Australia/Brisbane, time: 2026-08-26 08:10 }
     dropoff:   { place: "Port Douglas", tz: Australia/Brisbane, time: 2026-08-26 16:00 }
     address: "Great Barrier Reef"
     link: https://www.wavelength.com.au/
 
   - confirmation:
-    name: Australasian Rogaining Chamionships
+    name: Australasian Rogaining Championships
     vendor: Queensland Rogaining Association
     pickup:   { place: "Nundubbermere", tz: Australia/Brisbane, time: 2026-08-29 12:00 }
     dropoff:   { place: "Nundubbermere", tz: Australia/Brisbane, time: 2026-08-30 12:00 }
